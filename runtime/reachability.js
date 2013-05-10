@@ -17,6 +17,16 @@ HiddenClass.prototype.markReachable = function() {
 		this.markSuccessors();
 };
 
+FunctionClass.prototype.markReachable = function() {
+    HiddenClass.prototype.markReachable.call(this);
+    for(var p in this.properties)
+	if(p.substring(0, 2) === '$$') {
+	    var prop = this.properties[p];
+	    if(!(prop instanceof ObjClass) || !prop.isEmpty)
+		++this.refcount;
+	}
+};
+
 HiddenClass.prototype.markSuccessors = function() {
 	for(var p in this.properties)
 		if(this.properties.hasOwnProperty(p))

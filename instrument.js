@@ -91,33 +91,34 @@ function instrument(file, load, cb) {
     var normalized_ast = normalizer.normalize(original_ast, 
 					      { unify_ret: true });
     var instrumented_ast = instrument_ast(normalized_ast)[0];
-    var instrumented_src = runtime.getRuntimeSource() 
-	                 + escodegen.generate(instrumented_ast);
+    var instrumented_src = runtime.getRuntimeSource() + escodegen.generate(instrumented_ast);
 
-    if(load) {
-	var htmlTmp = temp.openSync({suffix: '.html'});
-	fs.writeSync(htmlTmp.fd, 
-		     "<html><head><script>\n" + 
-		     instrumented_src + "\n" +
-		     "</script></head><body></body></html>\n");
-	
-	var browser = new Browser();
-	browser.on("error", function(error) {
-	    console.error("ERROR: " + error);
-	    console.error(error.stack);
-	});
-  
-	browser.visit("file://" + htmlTmp.path, function (e, browser, status) {
-	    setTimeout(function() {
-		if(browser.errors && browser.errors.length) {
-		    console.error(browser.errors.join('\n'));
-		    return;
-		}
-		cb(browser.window.__done());
-	    }, 1000);
-	});    
+    if (load) {
+    	var htmlTmp = temp.openSync({
+    		suffix: '.html'
+    	});
+    	fs.writeSync(htmlTmp.fd, "<html><head>\n" +
+    	                         "<script src='https://raw.github.com/Constellation/escodegen/master/escodegen.browser.js'></script>\n" +
+    	                         "<script>\n" + instrumented_src + "\n" + "</script>\n" +
+    	                         "</head><body></body></html>\n");
+
+    	var browser = new Browser();
+    	browser.on("error", function(error) {
+    		console.error("ERROR: " + error);
+    		console.error(error.stack);
+    	});
+
+    	browser.visit("file://" + htmlTmp.path, function(e, browser, status) {
+    		setTimeout(function() {
+    			if (browser.errors && browser.errors.length) {
+    				console.error(browser.errors.join('\n'));
+    				return;
+    			}
+    			cb(browser.window.__done());
+    		}, 1000);
+    	});
     } else {
-	cb(instrumented_src);
+    	cb(instrumented_src);
     }
 }
 exports.instrument = instrument;
