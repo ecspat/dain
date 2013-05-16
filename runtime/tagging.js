@@ -33,6 +33,13 @@ function getHiddenClass(obj) {
 	}
 }
 
+function hasHiddenClass(obj) {
+	var tp = typeof obj;
+	if(tp === 'object' || tp === 'function')
+		return !obj || obj.__class;
+	return true;
+}
+
 function tagGlobal(global) {
 	if(!global.hasOwnProperty('__class'))
 		setHiddenProp(global, '__class', new GlobalClass(global));

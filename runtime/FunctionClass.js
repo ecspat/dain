@@ -9,7 +9,7 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global HiddenClass ObjClass getHiddenClass setHiddenProperty*/
+/*global HiddenClass ObjClass getHiddenClass setHiddenProperty add*/
 
 function FunctionClass(fn, line, offset) {
 	HiddenClass.call(this);
@@ -18,8 +18,23 @@ function FunctionClass(fn, line, offset) {
 	this.offset = offset;
 	this.prototype_class = new ObjClass(fn.prototype, line, offset);
 	this.setPropClass('$$prototype', this.prototype_class);
+	this.callees = [];
 }
 FunctionClass.prototype = Object.create(HiddenClass.prototype);
+
+FunctionClass.prototype.addCallee = function(callee, args) {
+	outer: for(var i=0,m=this.callees.length;i<m;++i) {
+		if(callee === this.callees[i][0]) {
+			if(args.length === this.callees[i][1].length) {
+				for(var j=0,n=args.length;j<n;++j)
+					if(args[j] !== this.callees[i][1][j])
+						continue outer;
+				return;
+			}
+		}
+	}
+	this.callees.push([callee, args]);
+};
 
 FunctionClass.cache = {};
 FunctionClass.make = function(fn, line, offset) {

@@ -134,6 +134,42 @@ FunctionClass.prototype.generate_asg = function(decls) {
 				decls.push(mkAssignStmt(mkMemberExpression(this.asg, prop_name), prop_asg));
 		}
 	}
+	
+	var maxparm = -1;
+	this.callees.forEach(function(callee_info) {
+		var callee = callee_info[0],
+		    args = callee_info[1];
+		    
+		if(typeof callee === 'number') {
+			maxparm = Math.max(maxparm, callee);
+			callee = { type: 'Identifier', name: 'p' + callee };
+		} else {
+			callee = callee.generate_asg(decls);
+		}
+		
+		args.forEach(function(arg, i) {
+			if(typeof arg === 'number') {
+				maxparm = Math.max(maxparm, arg);
+				args[i] = { type: 'Identifier', name: 'p' + arg };
+			} else if(arg) {
+				args[i] = arg.generate_asg(decls);
+			} else {
+				args[i] = { type: 'Literal', value: null, raw: "null" };
+			}
+		});
+		
+		body.push({
+					type: 'ExpressionStatement',
+					expression: {
+						type: 'CallExpression',
+						callee: callee,
+						'arguments': args
+					}
+				  });
+	});
+	
+	for(var i=0;i<=maxparm;++i)
+		this.asg.params.push({ type: 'Identifier', name: 'p' + i });
 
     if(this.fn.__instance_class)
 		for(p in this.fn.__instance_class.properties)
@@ -182,9 +218,9 @@ UnionClass.prototype.generate_asg = function(decls) {
 		this.asg = this.members[0].generate_asg(decls);
 	} else {
 		var n = this.members.length;
-		this.asg = mkOr(this.members[n-2].generate_asg(decls), this.members[n-1].generate_asg(decls));
-		for(var i=n-3;i>=0;--i)
-			this.asg = mkOr(this.members[i].generate_asg(decls), this.asg);
+		this.asg = mkOr(this.members[0].generate_asg(decls), this.members[1].generate_asg(decls));
+		for(var i=2;i<n;++i)
+			this.asg = mkOr(this.asg, this.members[i].generate_asg(decls));
 	}
 	
 	this.asg.temp_name = "tmp_" + this.id;

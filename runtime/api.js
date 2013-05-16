@@ -9,8 +9,8 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global getHiddenClass global console __write:true __return:true __done:true add mkAssignStmt escodegen
-         isIdentifier tagGlobal tagFn tagNew tagObjLit __tagGlobal:true __tagFn:true __tagNew:true __tagObjLit:true */
+/*global getHiddenClass hasHiddenClass global console __write:true __return:true __done:true add mkAssignStmt escodegen
+         isIdentifier tagGlobal tagFn tagNew tagObjLit __tagGlobal:true __call:true __tagFn:true __tagNew:true __tagObjLit:true */
 
 function write(obj, prop, val) {
 	var obj_klass = getHiddenClass(obj),
@@ -28,6 +28,40 @@ function ret(fn, val) {
 	var fn_klass = getHiddenClass(fn),
 		val_klass = getHiddenClass(val);
 	fn_klass.setPropClass('return', val_klass);
+}
+
+function call(caller_recv, caller_args, callee, callee_recv, callee_args) {
+	// flatten out reflective calls
+	if(callee === Function.prototype.call) {
+		call(caller_recv, caller_args, callee_recv, callee_args[0], Array.prototype.slice.call(callee_args, 1));
+		return;
+	} else if(callee === Function.prototype.apply) {
+		call(caller_recv, caller_args, callee_recv, callee_args[0], callee_args[1]);
+		return;
+	}
+	
+	var caller = caller_args.callee,
+	    caller_klass = getHiddenClass(caller);
+	
+	var callee_klass = getHiddenClassOrArgumentIndex(callee, caller_args);
+	// if we cannot say anything interesting about callee, don't record anything
+    if(callee_klass === null)
+		return;
+		
+	var arg_classes = [];
+	for(var i=0,n=callee_args.length;i<n;++i)
+		arg_classes[i] = getHiddenClassOrArgumentIndex(callee_args[i], caller_args);
+		
+	caller_klass.addCallee(callee_klass, arg_classes);
+}
+
+function getHiddenClassOrArgumentIndex(obj, args) {
+	for(var i=0,n=args.length;i<n;++i)
+		if(args[i] === obj)
+			return i;
+	if(hasHiddenClass(obj))
+		return getHiddenClass(obj);
+	return null;
 }
 
 function done() {
@@ -126,6 +160,15 @@ function unfold_asgs(decls) {
 			case 'Identifier':
 			case 'ThisExpression':
 				break;
+			case 'VariableDeclaration':
+				nd.declarations.forEach(function(decl, i) {
+					unfold(decl, nd.declarations, i, root);
+				});
+				break;
+			case 'VariableDeclarator':
+				if(nd.init)
+					unfold(nd.init, nd, 'init', root);
+				break;
 			default:
 				if(typeof nd.type === 'undefined')
 					debugger;
@@ -171,4 +214,5 @@ __tagNew = tagNew;
 __tagObjLit = tagObjLit;
 __write = write;
 __return = ret;
+__call = call;
 __done = done;

@@ -13,7 +13,7 @@
  * Instrumenter for dynamic model inference as described in README.txt.
  */
  
- /*global require console process setTimeout __dirname */
+ /*global require console process setTimeout __dirname exports module */
 
 var esprima = require('esprima'),
     escodegen = require('escodegen'),
@@ -56,26 +56,35 @@ function instrument_ast(nd) {
 			var ret_var = ast.getAttribute(nd, 'ret_var');
 			nd.body.body.splice(nd.body.body.length-1, 0, parseStmt("__return(arguments.callee, " + ret_var + ");"));
 		}
-	} else if(nd.type === 'ExpressionStatement' && nd.expression.type === 'AssignmentExpression') {
-		var left = nd.expression.left, right = nd.expression.right;
-		if(left.type === 'MemberExpression') {
-			return [nd,
-			        parseStmt("__write(" + left.object.name + ", " + left.property.name + "," + right.name + ");")];
-		} else if(right.type === 'FunctionExpression') {
-			pos = ast.getPosition(right);
-			instrument_ast(right);
-			return [nd,
-					parseStmt("__tagFn(" + left.name + ", " + pos.start_line + ", " + pos.start_offset + ");")];
-		} else if(right.type === 'ObjectExpression') {
-			pos = ast.getPosition(right);
-			instrument_ast(right);
-			var res = [nd,
-			           parseStmt("__tagObjLit(" + left.name + ", " + pos.start_line + ", " + pos.start_offset + ");")];
-			right.properties.forEach(function(prop) {
-				if(prop.kind === 'init')
-					return res[res.length] = parseStmt("__write(" + left.name + ", " + quote(prop.key.name || prop.key.value) + "," + prop.value.name + ");");
-			});
-			return res;
+	} else if(nd.type === 'ExpressionStatement') {
+		if(nd.expression.type === 'AssignmentExpression') {
+			var left = nd.expression.left, right = nd.expression.right;
+			if(left.type === 'MemberExpression') {
+				return [nd,
+						parseStmt("__write(" + left.object.name + ", " + left.property.name + "," + right.name + ");")];
+			} else if(right.type === 'FunctionExpression') {
+				pos = ast.getPosition(right);
+				instrument_ast(right);
+				return [nd,
+						parseStmt("__tagFn(" + left.name + ", " + pos.start_line + ", " + pos.start_offset + ");")];
+			} else if(right.type === 'ObjectExpression') {
+				pos = ast.getPosition(right);
+				instrument_ast(right);
+				var res = [nd,
+							parseStmt("__tagObjLit(" + left.name + ", " + pos.start_line + ", " + pos.start_offset + ");")];
+				right.properties.forEach(function(prop) {
+					if(prop.kind === 'init')
+						return res[res.length] = parseStmt("__write(" + left.name + ", " + quote(prop.key.name || prop.key.value) + "," + prop.value.name + ");");
+				});
+				return res;
+			} else if(right.type === 'CallExpression') {
+				var args = { type: 'ArrayExpression', elements: right['arguments'] };
+				var recv = (right.callee.type === 'MemberExpression' ? right.callee.object : { type: 'Literal', value: null, raw: "null" });
+				return [nd,
+				        parseStmt("__call(this, arguments, " + escodegen.generate(right.callee) + ", " + escodegen.generate(recv) + ", " + escodegen.generate(args) + ");")];
+			}
+		} else {
+			ast.forEachChild(nd, instrument_ast);
 		}
 	} else if(nd.type === 'BlockStatement') {
 		nd.body = instrument_ast(nd.body);
@@ -85,7 +94,7 @@ function instrument_ast(nd) {
 	return [nd];
 }
 
-function instrument(file, load, cb) {
+function instrument(file, load, test, cb) {
     var original_ast = esprima.parse(fs.readFileSync(file, 'utf-8'), 
 				     { loc: true, range: true });
     var normalized_ast = normalizer.normalize(original_ast, 
@@ -94,52 +103,50 @@ function instrument(file, load, cb) {
     var instrumented_src = runtime.getRuntimeSource() + escodegen.generate(instrumented_ast);
 
     if (load) {
-    	var htmlTmp = temp.openSync({
-    		suffix: '.html'
-    	});
-    	fs.writeSync(htmlTmp.fd, "<html><head>\n" +
-    	                         "<script src='https://raw.github.com/Constellation/escodegen/master/escodegen.browser.js'></script>\n" +
-    	                         "<script>\n" + instrumented_src + "\n" + "</script>\n" +
-    	                         "</head><body></body></html>\n");
+		var htmlTmp = temp.openSync({ suffix: '.html' });
+		fs.writeSync(htmlTmp.fd,
+					"<html><head>\n" +
+					"<script src='https://raw.github.com/Constellation/escodegen/master/escodegen.browser.js'></script>\n" +
+					"<script>\n" + instrumented_src + "\n" + "</script>\n" +
+					"</head><body></body>\n" +
+					(test ? "<script>\n" + fs.readFileSync(test, 'utf-8') + "</script>\n" : "") +
+					"</html>\n");
 
-    	var browser = new Browser();
-    	browser.on("error", function(error) {
-    		console.error("ERROR: " + error);
-    		console.error(error.stack);
-    	});
-
-    	browser.visit("file://" + htmlTmp.path, function(e, browser, status) {
-    		setTimeout(function() {
-    			if (browser.errors && browser.errors.length) {
-    				console.error(browser.errors.join('\n'));
-    				return;
-    			}
-    			cb(browser.window.__done());
-    		}, 1000);
-    	});
+		Browser.visit("file://" + htmlTmp.path, function(e, browser, status) {
+			setTimeout(function() {
+				if (browser.errors && browser.errors.length) {
+					console.error(browser.errors.join('\n'));
+					return;
+				}
+				cb(browser.window.__done());
+			}, 1000);
+		});
     } else {
-    	cb(instrumented_src);
+		cb(instrumented_src);
     }
 }
 exports.instrument = instrument;
 
-if(require.main === module) {
-    var argParser = new ArgumentParser({
-	addHelp: true,
-	description: 'DAIN: Dynamic API Inferencer',
-	usage: 'node ' + path.basename(process.argv[1]) + ' [OPTION]... FILE'
-    });
+if (require.main === module) {
+	var argParser = new ArgumentParser({
+		addHelp: true,
+		description: 'DAIN: Dynamic API Inferencer',
+		usage: 'node ' + path.basename(process.argv[1]) + ' [OPTION]... FILE [FILE]'
+	});
 
-    argParser.addArgument(['-l', '--load'], 
-			  { nargs: 0, 
-			    help: 'Immediately load instrumented code in a ' +
-  			          'trivial HTML page.'});
-    
-    var r = argParser.parseKnownArgs();
-    if(r[1].length !== 1 || r[1][0][0] === '-') {
-	argParser.printHelp();
-	process.exit(-1);
-    }
+	argParser.addArgument(['-l', '--load'], {
+		nargs: 0,
+		help: 'Immediately load instrumented code in a ' + 'trivial HTML page.'
+	});
 
-    instrument(r[1][0], r[0].load, console.log);
+	var r = argParser.parseKnownArgs();
+	if (r[1].length < 1 || r[1].length > 2 || r[1][0][0] === '-') {
+		argParser.printHelp();
+		process.exit(-1);
+	}
+	
+	if(!r[0].load && r[1].length > 1)
+		console.warn("Ignoring test file since '-l' wasn't given.");
+
+	instrument(r[1][0], r[0].load, r[1][1], console.log);
 }
