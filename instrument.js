@@ -17,8 +17,7 @@
 
 var esprima = require('esprima'),
     escodegen = require('escodegen'),
-    normalizer = require('JS_WALA/normalizer/lib/normalizer.js'),
-    ast = require('JS_WALA/common/lib/ast.js'),
+    eavesdropper = require('eavesdropper/eavesdropper.js'),
     runtime = require('./runtime/runtime.js'),
     fs = require('fs'),
     path = require('path'),
@@ -26,87 +25,14 @@ var esprima = require('esprima'),
     Browser = require('zombie'),
     ArgumentParser = require('argparse').ArgumentParser;
     
-function parseStmt(src) {
-    return esprima.parse(src).body[0];
-}
-
-function parseExpr(src) {
-    return parseStmt("(" + src + ");").expression;
-}
-
-function quote(str) {
-    return escodegen.generate({ type: 'Literal', value: str });
-}
-
-function instrument_ast(nd) {
-	var pos;
-	
-	if(!nd)
-		return;
-
-	if(Array.isArray(nd))
-		return nd.flatmap(instrument_ast);
-
-	if(nd.type === 'FunctionExpression') {
-		instrument_ast(nd.body);
-		nd.body.body.unshift(parseStmt("if(this.__proto__ === arguments.callee.prototype) { __tagNew(this, arguments.callee); }"));
-		if(nd.params.length === 1 && nd.params[0].name === '__global') {
-			nd.body.body.unshift(parseStmt("__tagGlobal(__global);"));
-		} else {
-			var ret_var = ast.getAttribute(nd, 'ret_var');
-			nd.body.body.splice(nd.body.body.length-1, 0, parseStmt("__return(arguments.callee, " + ret_var + ");"));
-		}
-	} else if(nd.type === 'ExpressionStatement') {
-		if(nd.expression.type === 'AssignmentExpression') {
-			var left = nd.expression.left, right = nd.expression.right;
-			if(left.type === 'MemberExpression') {
-				return [nd,
-						parseStmt("__write(" + left.object.name + ", " + left.property.name + "," + right.name + ");")];
-			} else if(right.type === 'FunctionExpression') {
-				pos = ast.getPosition(right);
-				instrument_ast(right);
-				return [nd,
-						parseStmt("__tagFn(" + left.name + ", " + pos.start_line + ", " + pos.start_offset + ");")];
-			} else if(right.type === 'ObjectExpression') {
-				pos = ast.getPosition(right);
-				instrument_ast(right);
-				var res = [nd,
-							parseStmt("__tagObjLit(" + left.name + ", " + pos.start_line + ", " + pos.start_offset + ");")];
-				right.properties.forEach(function(prop) {
-					if(prop.kind === 'init')
-						return res[res.length] = parseStmt("__write(" + left.name + ", " + quote(prop.key.name || prop.key.value) + "," + prop.value.name + ");");
-				});
-				return res;
-			} else if(right.type === 'CallExpression') {
-				var args = { type: 'ArrayExpression', elements: right['arguments'] };
-				var recv = (right.callee.type === 'MemberExpression' ? right.callee.object : { type: 'Literal', value: null, raw: "null" });
-				return [nd,
-				        parseStmt("__call(this, arguments, " + escodegen.generate(right.callee) + ", " + escodegen.generate(recv) + ", " + escodegen.generate(args) + ");")];
-			}
-		} else {
-			ast.forEachChild(nd, instrument_ast);
-		}
-	} else if(nd.type === 'BlockStatement') {
-		nd.body = instrument_ast(nd.body);
-	} else {
-		ast.forEachChild(nd, instrument_ast);
-	}
-	return [nd];
-}
-
 function instrument(file, load, test, cb) {
-    var original_ast = esprima.parse(fs.readFileSync(file, 'utf-8'), 
-				     { loc: true, range: true });
-    var normalized_ast = normalizer.normalize(original_ast, 
-					      { unify_ret: true });
-    var instrumented_ast = instrument_ast(normalized_ast)[0];
-    var instrumented_src = runtime.getRuntimeSource() + escodegen.generate(instrumented_ast);
+    var instrumented_src = runtime.getRuntimeSource() + eavesdropper.instrument(fs.readFileSync(file, 'utf-8'), file);
 
     if (load) {
 		var htmlTmp = temp.openSync({ suffix: '.html' });
 		fs.writeSync(htmlTmp.fd,
 					"<html><head>\n" +
-					"<script src='https://raw.github.com/Constellation/escodegen/master/escodegen.browser.js'></script>\n" +
+					"<script src='file://" + __dirname + "/node_modules/escodegen/escodegen.browser.js'></script>\n" +
 					"<script>\n" + instrumented_src + "\n" + "</script>\n" +
 					"</head><body></body>\n" +
 					(test ? "<script>\n" + fs.readFileSync(test, 'utf-8') + "</script>\n" : "") +
@@ -118,7 +44,7 @@ function instrument(file, load, test, cb) {
 					console.error(browser.errors.join('\n'));
 					return;
 				}
-				cb(browser.window.__done());
+				cb(browser.window.__observer.done());
 			}, 1000);
 		});
     } else {

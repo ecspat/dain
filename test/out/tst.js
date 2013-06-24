@@ -1,12 +1,12 @@
-var A = function fn() {
-  fn.prototype = {
-    m: function fn() {}
-  };
-  fn.z = {
-    '*': $$NUMBER$$
-  };
-  this.x = $$NUMBER$$;
-  this['*'] = $$STRING$$;
+var $$NUMBER$$ = Math.random();
+var function_1_0 = function () {
+    this.x = $$NUMBER$$;
+    this['*'] = String($$NUMBER$$);
 };
-var a = new A();
-
+function_1_0.prototype = {
+    m: function () {
+    }
+};
+function_1_0.z = { '*': $$NUMBER$$ };
+var A = function_1_0;
+var a = new function_1_0();

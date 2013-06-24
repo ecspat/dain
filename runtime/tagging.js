@@ -91,6 +91,8 @@ Observer.prototype.afterFunctionExpression = function(pos, lhs, fn) {
 	tagFn(fn, pos.start_line, pos.start_offset);
 };
 
-Observer.prototype.afterNewExpression = function(pos, lhs, obj, callee, args) {
-	tagNew(obj, callee);
+Observer.prototype.atFunctionEntry = function(pos, recv, args) {
+	// TODO: replace with more robust test based on tracking function calls/returns
+	if(recv.__proto__ == args.callee.prototype)
+		tagNew(recv, args.callee);
 };

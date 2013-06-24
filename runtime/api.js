@@ -33,7 +33,7 @@ Observer.prototype.done = function() {
 	
 	for (var p in global_class.properties) {
 		var prop = p.substring(2);
-		decls.push(mkAssignStmt({ type: 'Identifier', name: prop }, global_class.properties[p].generate_asg(decls)));
+		decls.push(mkDecl(prop, global_class.properties[p].generate_asg(decls)));
 	}
 	
 	unfold_asgs(decls);

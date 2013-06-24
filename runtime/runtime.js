@@ -9,7 +9,7 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global require exports __dirname console*/ 
+/*global require exports __dirname console module*/ 
  
 var fs = require('fs');
  
@@ -41,4 +41,6 @@ exports.getRuntimeSource = function() {
 		   "}\n";
 };
 
-console.log(exports.getRuntimeSource());
+if (require.main === module) {
+	console.log(exports.getRuntimeSource());
+}

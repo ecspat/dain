@@ -1,3 +1,3 @@
+var $$NUMBER$$ = Math.random();
 var x = $$NUMBER$$;
-var y = $$NUMBER$$ || $$STRING$$;
-
+var y = $$NUMBER$$ || String($$NUMBER$$);

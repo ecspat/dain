@@ -4,13 +4,12 @@
     "author": "Max Schaefer <schaefer@ntu.edu.sg>",
     "description": "Dynamic API inferencer for JavaScript",
     "dependencies" : {
-	"esprima": "*",
-	"escodegen": "*",
-	"temp" : "*",
-	"zombie" : "*",
-	"argparse" : "*",
-	"js_wala": "https://github.com/wala/JS_WALA/tarball/master",
-	"nodeunit" : "*"
+		"escodegen": "*",
+		"temp" : "*",
+		"zombie" : "*",
+		"argparse" : "*",
+		"eavesdropper": "https://github.com/ecspat/eavesdropper/tarball/master",
+		"nodeunit" : "*"
     },
     "license": "Eclipse"
 }

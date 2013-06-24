@@ -127,8 +127,6 @@ FunctionClass.prototype.generate_asg = function(decls) {
 	for(var p in this.properties) {
 		if(p.substring(0, 2) === '$$') {
 		    var prop_name = p.substring(2);
-		    if(!this.properties[p])
-		    	debugger;
 		    var prop_asg = this.properties[p].generate_asg(decls);
 
 		    // don't include trivial function prototypes
@@ -140,8 +138,6 @@ FunctionClass.prototype.generate_asg = function(decls) {
     if(this.fn.__instance_class)
 		for(p in this.fn.__instance_class.properties)
 		    if(p.substring(0, 2) === '$$') {
-		    	if(!this.fn__instance_class.properties[p])
-		    		debugger;
 				body.push(mkAssignStmt(mkMemberExpression(mkThis(), p.substring(2)),  this.fn.__instance_class.properties[p].generate_asg(decls)));
 			}
 
@@ -162,8 +158,6 @@ ObjClass.prototype.generate_asg = function(decls) {
 		
 	for(var p in this.properties)
 		if(p.substring(0, 2) === '$$') {
-			if(!this.properties[p])
-				debugger;
 			props.push(mkProperty(p.substring(2), this.properties[p].generate_asg(decls)));
 		}
 
@@ -174,8 +168,6 @@ InstanceClass.prototype.generate_asg = function(decls) {
 	if(this.asg)
 		return this.asg;
 		
-	if(!this.fnclass)
-		debugger;
 	this.asg = { type: 'NewExpression',
 				 callee: this.fnclass.generate_asg(decls),
 				 'arguments': [],
@@ -192,12 +184,8 @@ UnionClass.prototype.generate_asg = function(decls) {
 		this.asg = this.members[0].generate_asg(decls);
 	} else {
 		var n = this.members.length;
-		if(!this.members[0] || !this.members[1])
-			debugger;
 		this.asg = mkOr(this.members[0].generate_asg(decls), this.members[1].generate_asg(decls));
 		for(var i=2;i<n;++i) {
-			if(!this.members[i])
-				debugger;
 			this.asg = mkOr(this.asg, this.members[i].generate_asg(decls));
 		}
 	}
@@ -213,7 +201,7 @@ PrimitiveClass.prototype.generate_asg = function(decls) {
 
 NUMBER.asg = { type: 'CallExpression', callee: mkMemberExpression("Math", "random"), 'arguments': [], temp_name: '$$NUMBER$$' };
 BOOLEAN.asg = { type: 'UnaryExpression', operator: '!', argument: NUMBER.asg, temp_name: '$$BOOLEAN$$' };
-STRING.asg = { type: 'NewExpression', callee: { type: 'Identifier', name: 'String' }, 'arguments': [NUMBER.asg], temp_name: '$$STRING$$' };
+STRING.asg = { type: 'CallExpression', callee: { type: 'Identifier', name: 'String' }, 'arguments': [NUMBER.asg], temp_name: '$$STRING$$' };
 REGEXP.asg = { type: 'NewExpression', callee: { type: 'Identifier', name: 'RegExp' }, 'arguments': [STRING.asg], temp_name: '$$REGEXP$$' };
 
 UNDEFINED.generate_asg = function() {
