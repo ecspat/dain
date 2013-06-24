@@ -9,7 +9,7 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global HiddenClass UnionClass InstanceClass*/
+/*global HiddenClass UnionClass InstanceClass FunctionClass ObjClass */
 
 HiddenClass.prototype.markReachable = function() {
 	this.refcount = (this.refcount || 0) + 1;

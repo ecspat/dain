@@ -9,7 +9,7 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
  
-/*global BOOLEAN NUMBER STRING UNDEFINED NULL REGEXP ObjClass FunctionClass InstanceClass GlobalClass setHiddenProp*/
+/*global BOOLEAN NUMBER STRING UNDEFINED NULL REGEXP ObjClass FunctionClass InstanceClass GlobalClass setHiddenProp Observer isIdentifier*/
 
 function getHiddenClass(obj) {
 	switch(typeof obj) {
@@ -47,7 +47,7 @@ function tagGlobal(global) {
 }
 	
 function tagNew(obj, fn) {
-	if(!obj.hasOwnProperty('__class'))
+	if(!obj.hasOwnProperty('__class') && fn.hasOwnProperty('__class'))
 		setHiddenProp(obj, '__class', InstanceClass.from(fn));
 	return obj.__class;
 }
@@ -67,3 +67,30 @@ function tagObjLit(obj, line, offset) {
 		setHiddenProp(obj, '__class', ObjClass.make(obj, line, offset));
 	return obj.__class;
 }
+
+function tagMember(obj_klass, prop, val) {
+	var val_klass = getHiddenClass(val);
+	if (!isIdentifier("" + prop))
+		prop = "*";
+	obj_klass.setPropClass('$$' + prop, val_klass);
+}
+
+Observer.prototype.afterObjectExpression = function(pos, lhs, obj) {
+	tagObjLit(obj, pos.start_line, pos.start_offset);
+	var obj_klass = getHiddenClass(obj);
+	for(var p in obj) {
+		if(obj.hasOwnProperty(p)) {
+			var desc = Object.getOwnPropertyDescriptor(obj, p);
+			if(!desc.get && !desc.set)
+				tagMember(obj_klass, p, obj[p]);
+		}
+	}
+};
+
+Observer.prototype.afterFunctionExpression = function(pos, lhs, fn) {
+	tagFn(fn, pos.start_line, pos.start_offset);
+};
+
+Observer.prototype.afterNewExpression = function(pos, lhs, obj, callee, args) {
+	tagNew(obj, callee);
+};

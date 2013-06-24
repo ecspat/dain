@@ -9,33 +9,36 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/**
- * Runtime support for programs instrumented with property-discovery.js.
- */
-
-/*global require exports __dirname*/ 
+/*global require exports __dirname console*/ 
  
 var fs = require('fs');
  
 function include(mod) {
 	return fs.readFileSync(__dirname + '/' + mod + '.js', 'utf-8');
 }
- 
+
 exports.getRuntimeSource = function() {
-	return "var __write, __return, __done, __tagGlobal, __tagFn, __tagNew, __tagObjLit;\n" +
-		   "(function(global, undefined) {\n" +
-             include('util') +
-             include('HiddenClass') +
-             include('FunctionClass') +
-             include('ObjClass') +
-             include('InstanceClass') +
-             include('PrimitiveClass') +
-             include('UnionClass') +
-             include('GlobalClass') +
-             include('union') +
-             include('pp') +
-             include('tagging') +
-             include('reachability') +
-             include('api') +
-		   "})(this);\n";
+	return "var __observer;\n" +
+		   "if(!__observer) {\n" +
+		   "  __observer = (function(global) {\n" +
+		        include('Observer') +
+                include('util') +
+                include('HiddenClass') +
+                include('FunctionClass') +
+                include('ObjClass') +
+                include('InstanceClass') +
+                include('PrimitiveClass') +
+                include('UnionClass') +
+                include('GlobalClass') +
+                include('union') +
+                include('pp') +
+                include('tagging') +
+                include('reachability') +
+                include('api') +
+           "    tagGlobal(global);\n" +
+           "    return new Observer();\n" +
+		   "  })(this);\n" +
+		   "}\n";
 };
+
+console.log(exports.getRuntimeSource());

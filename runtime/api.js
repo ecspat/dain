@@ -9,62 +9,25 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global getHiddenClass hasHiddenClass global console __write:true __return:true __done:true add mkAssignStmt escodegen
-         isIdentifier tagGlobal tagFn tagNew tagObjLit __tagGlobal:true __call:true __tagFn:true __tagNew:true __tagObjLit:true */
+/*global Observer getHiddenClass isIdentifier hasHiddenClass tagMember global mkAssignStmt escodegen add console */
 
-function write(obj, prop, val) {
-	var obj_klass = getHiddenClass(obj),
-		val_klass = getHiddenClass(val);
-	if (!isIdentifier("" + prop))
-		prop = "*";
-	obj_klass.setPropClass('$$' + prop, val_klass);
-}
+Observer.prototype.beforeMemberWrite = function(pos, obj, prop, isDynamic, rhs, obj_val, prop_val, rhs_val) {
+	var obj_klass = getHiddenClass(obj_val);
+	tagMember(obj_klass, prop_val, rhs_val);
+};
 
-function ret(fn, val) {
+Observer.prototype.atFunctionReturn = function(pos, fn, ret, ret_val) {
 	// returning 'undefined' isn't interesting, forget about it
-	if (val === void(0))
+	if (ret_val === void(0))
 		return;
 
 	var fn_klass = getHiddenClass(fn),
-		val_klass = getHiddenClass(val);
+		val_klass = getHiddenClass(ret_val);
 	fn_klass.setPropClass('return', val_klass);
-}
+};
 
-function call(caller_recv, caller_args, callee, callee_recv, callee_args) {
-	// flatten out reflective calls
-	if(callee === Function.prototype.call) {
-		call(caller_recv, caller_args, callee_recv, callee_args[0], Array.prototype.slice.call(callee_args, 1));
-		return;
-	} else if(callee === Function.prototype.apply) {
-		call(caller_recv, caller_args, callee_recv, callee_args[0], callee_args[1]);
-		return;
-	}
-	
-	var caller = caller_args.callee,
-	    caller_klass = getHiddenClass(caller);
-	
-	var callee_klass = getHiddenClassOrArgumentIndex(callee, caller_args);
-	// if we cannot say anything interesting about callee, don't record anything
-    if(callee_klass === null)
-		return;
-		
-	var arg_classes = [];
-	for(var i=0,n=callee_args.length;i<n;++i)
-		arg_classes[i] = getHiddenClassOrArgumentIndex(callee_args[i], caller_args);
-		
-	caller_klass.addCallee(callee_klass, arg_classes);
-}
 
-function getHiddenClassOrArgumentIndex(obj, args) {
-	for(var i=0,n=args.length;i<n;++i)
-		if(args[i] === obj)
-			return i;
-	if(hasHiddenClass(obj))
-		return getHiddenClass(obj);
-	return null;
-}
-
-function done() {
+Observer.prototype.done = function() {
 	var decls = [];
 	var global_class = getHiddenClass(global);
 	
@@ -77,7 +40,7 @@ function done() {
 	decls = sort_decls(decls);
 	
 	return decls.map(escodegen.generate).join('\n');
-}
+};
 
 function mkDecl(name, value) {
 	return {
@@ -102,6 +65,8 @@ function unfold_asgs(decls) {
 	}
 	
 	function unfold(nd, parent, child_idx, root) {
+		var i, n;
+		
 		// check whether this node has already been promoted to a declaration
 		if(nd.global_decl) {
 			recordDependency(root, nd.global_decl);
@@ -123,14 +88,14 @@ function unfold_asgs(decls) {
 				unfold(nd.right, nd, 'right', root);
 				break;
 			case 'BlockStatement':
-				for(var i=0,n=nd.body.length;i<n;++i)
+				for(i=0,n=nd.body.length;i<n;++i)
 					unfold(nd.body[i], nd.body, i, root);
 				break;
 			case 'CallExpression':
 			case 'NewExpression':
 				unfold(nd.callee, nd, 'callee', root);
 				var args = nd['arguments'];
-				for(var i=0,n=args.length;i<n;++i)
+				for(i=0,n=args.length;i<n;++i)
 					unfold(args[i], args, i, root);
 				break;
 			case 'ExpressionStatement':
@@ -145,7 +110,7 @@ function unfold_asgs(decls) {
 					unfold(nd.property, nd, 'property', root);
 				break;
 			case 'ObjectExpression':
-				for(var i=0,n=nd.properties.length;i<n;++i)
+				for(i=0,n=nd.properties.length;i<n;++i)
 					unfold(nd.properties[i], nd.properties, i, root);
 				break;
 			case 'Property':
@@ -170,8 +135,6 @@ function unfold_asgs(decls) {
 					unfold(nd.init, nd, 'init', root);
 				break;
 			default:
-				if(typeof nd.type === 'undefined')
-					debugger;
 				throw new Error("no idea how to handle " + nd.type);
 			}
 		}
@@ -206,13 +169,3 @@ function sort_decls(decls) {
 		
 	return res;
 }
-
-// expose API 
-__tagGlobal = tagGlobal;
-__tagFn = tagFn;
-__tagNew = tagNew;
-__tagObjLit = tagObjLit;
-__write = write;
-__return = ret;
-__call = call;
-__done = done;

@@ -127,6 +127,8 @@ FunctionClass.prototype.generate_asg = function(decls) {
 	for(var p in this.properties) {
 		if(p.substring(0, 2) === '$$') {
 		    var prop_name = p.substring(2);
+		    if(!this.properties[p])
+		    	debugger;
 		    var prop_asg = this.properties[p].generate_asg(decls);
 
 		    // don't include trivial function prototypes
@@ -135,46 +137,13 @@ FunctionClass.prototype.generate_asg = function(decls) {
 		}
 	}
 	
-	var maxparm = -1;
-	this.callees.forEach(function(callee_info) {
-		var callee = callee_info[0],
-		    args = callee_info[1];
-		    
-		if(typeof callee === 'number') {
-			maxparm = Math.max(maxparm, callee);
-			callee = { type: 'Identifier', name: 'p' + callee };
-		} else {
-			callee = callee.generate_asg(decls);
-		}
-		
-		args.forEach(function(arg, i) {
-			if(typeof arg === 'number') {
-				maxparm = Math.max(maxparm, arg);
-				args[i] = { type: 'Identifier', name: 'p' + arg };
-			} else if(arg) {
-				args[i] = arg.generate_asg(decls);
-			} else {
-				args[i] = { type: 'Literal', value: null, raw: "null" };
-			}
-		});
-		
-		body.push({
-					type: 'ExpressionStatement',
-					expression: {
-						type: 'CallExpression',
-						callee: callee,
-						'arguments': args
-					}
-				  });
-	});
-	
-	for(var i=0;i<=maxparm;++i)
-		this.asg.params.push({ type: 'Identifier', name: 'p' + i });
-
     if(this.fn.__instance_class)
 		for(p in this.fn.__instance_class.properties)
-		    if(p.substring(0, 2) === '$$')
+		    if(p.substring(0, 2) === '$$') {
+		    	if(!this.fn__instance_class.properties[p])
+		    		debugger;
 				body.push(mkAssignStmt(mkMemberExpression(mkThis(), p.substring(2)),  this.fn.__instance_class.properties[p].generate_asg(decls)));
+			}
 
 	if(this.properties['return'])
 		body.push(mkReturn(this.properties['return'].generate_asg(decls)));
@@ -192,8 +161,11 @@ ObjClass.prototype.generate_asg = function(decls) {
 				 temp_name: this.mkTempName() };
 		
 	for(var p in this.properties)
-		if(p.substring(0, 2) === '$$')
+		if(p.substring(0, 2) === '$$') {
+			if(!this.properties[p])
+				debugger;
 			props.push(mkProperty(p.substring(2), this.properties[p].generate_asg(decls)));
+		}
 
 	return this.asg;
 };
@@ -202,6 +174,8 @@ InstanceClass.prototype.generate_asg = function(decls) {
 	if(this.asg)
 		return this.asg;
 		
+	if(!this.fnclass)
+		debugger;
 	this.asg = { type: 'NewExpression',
 				 callee: this.fnclass.generate_asg(decls),
 				 'arguments': [],
@@ -218,9 +192,14 @@ UnionClass.prototype.generate_asg = function(decls) {
 		this.asg = this.members[0].generate_asg(decls);
 	} else {
 		var n = this.members.length;
+		if(!this.members[0] || !this.members[1])
+			debugger;
 		this.asg = mkOr(this.members[0].generate_asg(decls), this.members[1].generate_asg(decls));
-		for(var i=2;i<n;++i)
+		for(var i=2;i<n;++i) {
+			if(!this.members[i])
+				debugger;
 			this.asg = mkOr(this.asg, this.members[i].generate_asg(decls));
+		}
 	}
 	
 	this.asg.temp_name = "tmp_" + this.id;

@@ -13,6 +13,8 @@
 
 function InstanceClass(fnclass) {
 	HiddenClass.call(this);
+	if(!fnclass)
+		debugger;
 	this.fnclass = fnclass;
 }
 InstanceClass.prototype = Object.create(HiddenClass.prototype);
