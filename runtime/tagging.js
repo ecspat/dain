@@ -133,8 +133,8 @@ Observer.prototype.beforeCall = function(pos, recv, callee, args, kind) {
 		var callee_class = getHiddenClass(callee);
 		if (callee_class instanceof CallBackClass) {
 			callee_class.fn.used_params[callee_class.index] = true;
-			var arg_classes = args.map(getHiddenClass);
-			recv = recv && getHiddenClass(recv);
+			var arg_classes = Array.prototype.map.call(args, getHiddenClass);
+			recv = kind === 'method' && getHiddenClass(recv);
 			
 			// record call, but only if there isn't already an equivalent call
 			var global_class = getHiddenClass(global);
