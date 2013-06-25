@@ -9,7 +9,7 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
  
-/*global BOOLEAN NUMBER STRING UNDEFINED NULL REGEXP ObjClass FunctionClass InstanceClass GlobalClass setHiddenProp Observer isIdentifier*/
+/*global BOOLEAN NUMBER STRING UNDEFINED NULL REGEXP ObjClass FunctionClass InstanceClass GlobalClass CallBackClass setHiddenProp Observer isIdentifier array_eq*/
 
 function getHiddenClass(obj) {
 	switch(typeof obj) {
@@ -27,7 +27,9 @@ function getHiddenClass(obj) {
 			return NULL;
 		if(obj instanceof RegExp)
 			return REGEXP;
-		return obj.__class || (typeof obj === "object" ? tagObjLit(obj, -1, -1) : tagFn(obj, -1, -1));
+		if(obj.hasOwnProperty('__class'))
+			return obj.__class;
+		return typeof obj === "object" ? tagObjLit(obj, -1, -1) : tagFn(obj, -1, -1);
 	default:
 		throw new Error("cannot determine hidden class");
 	}
@@ -36,7 +38,7 @@ function getHiddenClass(obj) {
 function hasHiddenClass(obj) {
 	var tp = typeof obj;
 	if(tp === 'object' || tp === 'function')
-		return !obj || obj.__class;
+		return !obj || obj.hasOwnProperty('__class');
 	return true;
 }
 
@@ -75,7 +77,7 @@ function tagMember(obj_klass, prop, val) {
 	obj_klass.setPropClass('$$' + prop, val_klass);
 }
 
-Observer.prototype.afterObjectExpression = function(pos, lhs, obj) {
+Observer.prototype.afterObjectExpression = function(pos, obj) {
 	tagObjLit(obj, pos.start_line, pos.start_offset);
 	var obj_klass = getHiddenClass(obj);
 	for(var p in obj) {
@@ -87,12 +89,43 @@ Observer.prototype.afterObjectExpression = function(pos, lhs, obj) {
 	}
 };
 
-Observer.prototype.afterFunctionExpression = function(pos, lhs, fn) {
+Observer.prototype.afterFunctionExpression = function(pos, fn) {
 	tagFn(fn, pos.start_line, pos.start_offset);
 };
 
 Observer.prototype.atFunctionEntry = function(pos, recv, args) {
 	// TODO: replace with more robust test based on tracking function calls/returns
-	if(recv.__proto__ == args.callee.prototype)
+	if(recv instanceof args.callee)
 		tagNew(recv, args.callee);
+		
+	// tag client callbacks when we first see them
+	var fn_class = getHiddenClass(args.callee);
+	for(var i=0,n=args.length;i<n;++i) {
+		if(typeof args[i] === 'function' && !hasHiddenClass(args[i])) {
+			setHiddenProp(args[i], '__class', CallBackClass.make(fn_class, i));
+		}
+	}
+};
+
+Observer.prototype.beforeFunctionCall = function(pos, callee, args, caller) {
+	if (hasHiddenClass(callee)) {
+		var callee_class = getHiddenClass(callee),
+			caller_class = getHiddenClass(caller);
+		if (callee_class instanceof CallBackClass) {
+			callee_class.fn.used_params[callee_class.index] = true;
+			var arg_classes = args.map(getHiddenClass);
+			
+			// record call, but only if there isn't already an equivalent call
+			for(var i=0,n=caller_class.calls.length;i<n;++i) {
+				var call = caller_class.calls[i];
+				if(call.callee === callee_class && array_eq(call.args, arg_classes))
+					return;
+			}
+			
+			caller_class.calls.push({
+				callee: callee_class,
+				args: arg_classes
+			});
+		}
+	}
 };

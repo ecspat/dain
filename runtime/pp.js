@@ -24,6 +24,17 @@ function mkAssignStmt(lhs, rhs) {
 	};
 }
 
+function mkCallStmt(callee, args) {
+	return {
+		type: 'ExpressionStatement',
+		expression: {
+			type: 'CallExpression',
+			callee: callee,
+			'arguments': args
+		}
+	};
+}
+
 function isIdentifier(str) {
 	return str.match(/^[a-zA-Z_$][0-9a-zA-Z_$]*$/);
 }
@@ -83,6 +94,13 @@ function mkThis() {
 	return { type: 'ThisExpression' };
 }
 
+function mkIdentifier(x) {
+	return {
+		type: 'Identifier',
+		name: x
+	};
+}
+
 function mkReturn(expr) {
 	return {
 		type: 'ReturnStatement',
@@ -108,11 +126,11 @@ FunctionClass.prototype.generate_asg = function(decls) {
 	if(this.asg)
 		return this.asg;
 		
-	var body = [];
+	var body = [], params = [];
 	this.asg = {
 		type: 'FunctionExpression',
 		id: null,
-		params: [],
+		params: params,
 		defaults: [],
 		body: {
 			type: 'BlockStatement',
@@ -123,7 +141,33 @@ FunctionClass.prototype.generate_asg = function(decls) {
 		expression: false,
 		temp_name: this.mkTempName()
 	};
+	
+	// handle callback parameters
+	for (var i = 0, n = this.used_params.length; i < n; ++i) {
+		// generate parameter declaration
+		params.push(mkIdentifier('x' + i));
+		
+		if (this.used_params[i]) {
+			var callback_class = this.callback_classes[i],
+				callback_tmp_name = callback_class.mkTempName();
+
+			// generate declaration for callback variable
+			decls.push({
+				type: 'VariableDeclaration',
+				declarations: [{
+					type: 'VariableDeclarator',
+					id: mkIdentifier(callback_tmp_name),
+					init: null
+				}],
+				kind: 'var'
+			});
+
+			// store callback into variable
+			body.push(mkAssignStmt(mkIdentifier(callback_tmp_name), mkIdentifier('x' + i)));
+		}
+	}
 				 
+	// handle function properties
 	for(var p in this.properties) {
 		if(p.substring(0, 2) === '$$') {
 		    var prop_name = p.substring(2);
@@ -135,12 +179,20 @@ FunctionClass.prototype.generate_asg = function(decls) {
 		}
 	}
 	
+	// handle instance properties
     if(this.fn.__instance_class)
 		for(p in this.fn.__instance_class.properties)
 		    if(p.substring(0, 2) === '$$') {
 				body.push(mkAssignStmt(mkMemberExpression(mkThis(), p.substring(2)),  this.fn.__instance_class.properties[p].generate_asg(decls)));
 			}
+			
+	// handle callback invocations
+	for(i=0,n=this.calls.length;i<n;++i) {
+		var call = this.calls[i];
+		body.push(mkCallStmt(mkIdentifier(call.callee.mkTempName()), call.args.map(function(arg) { return arg.generate_asg(); })));
+	}
 
+	// handle return type
 	if(this.properties['return'])
 		body.push(mkReturn(this.properties['return'].generate_asg(decls)));
 		

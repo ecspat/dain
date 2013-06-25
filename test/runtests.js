@@ -12,25 +12,32 @@
 /*global require exports module __dirname*/
 
 var fs = require('fs'),
+	path = require('path'),
     esprima = require('esprima'),
     escodegen = require('escodegen'),
     instrumenter = require('../instrument');
 
-function runtest(test, input_file, output_file) {
+function runtest(test, input_file, client_file, output_file) {
 	test.expect(1);
 	var expected_output = escodegen.generate(esprima.parse(fs.readFileSync(output_file, 'utf-8')));
-	instrumenter.instrument(input_file, true, null, function(actual_output) {
+	instrumenter.instrument(input_file, true, client_file, function(actual_output) {
 		actual_output = escodegen.generate(esprima.parse(actual_output));
 		test.equal(expected_output, actual_output);
 		test.done();
 	});
 }
 
-var IN_DIR = __dirname + "/in/", OUT_DIR = __dirname + "/out/";
+var IN_DIR = __dirname + "/in", OUT_DIR = __dirname + "/out";
 fs.readdirSync(IN_DIR).forEach(function(file) {
-	if (/\.js$/.test(file)) exports[file] = function(test) {
-		runtest(test, IN_DIR + file, OUT_DIR + file);
-	};
+	if (/\.js$/.test(file) && !/_client\.js$/.test(file)) {
+		var client = IN_DIR + '/' + path.basename(file, '.js') + '_client.js';
+		if(!fs.existsSync(client))
+			client = null;
+			
+		exports[file] = function(test) {
+			runtest(test, IN_DIR + '/' + file, client, OUT_DIR + '/' + file);
+		};
+	}
 });
 
 var reporter = require('nodeunit').reporters['default'];

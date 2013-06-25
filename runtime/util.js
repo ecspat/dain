@@ -22,3 +22,13 @@ function add(array, elt) {
 			return;
 	array[i] = elt;
 }
+
+// utility function for doing 1-level comparison of arrays
+function array_eq(a, b) {
+	if(a.length !== b.length)
+		return false;
+	for(var i=0,n=a.length;i<n;++i)
+		if(a[i] !== b[i])
+			return false;
+	return true;
+}

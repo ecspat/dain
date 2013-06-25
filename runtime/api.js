@@ -11,18 +11,18 @@
 
 /*global Observer getHiddenClass isIdentifier hasHiddenClass tagMember global mkAssignStmt escodegen add console */
 
-Observer.prototype.beforeMemberWrite = function(pos, obj, prop, isDynamic, rhs, obj_val, prop_val, rhs_val) {
-	var obj_klass = getHiddenClass(obj_val);
-	tagMember(obj_klass, prop_val, rhs_val);
+Observer.prototype.beforeMemberWrite = function(pos, obj, prop, val) {
+	var obj_klass = getHiddenClass(obj);
+	tagMember(obj_klass, prop, val);
 };
 
-Observer.prototype.atFunctionReturn = function(pos, fn, ret, ret_val) {
+Observer.prototype.atFunctionReturn = function(pos, fn, ret) {
 	// returning 'undefined' isn't interesting, forget about it
-	if (ret_val === void(0))
+	if (ret === void(0))
 		return;
 
 	var fn_klass = getHiddenClass(fn),
-		val_klass = getHiddenClass(ret_val);
+		val_klass = getHiddenClass(ret);
 	fn_klass.setPropClass('return', val_klass);
 };
 
