@@ -9,7 +9,7 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global Observer getHiddenClass isIdentifier hasHiddenClass tagMember global mkAssignStmt escodegen add console */
+/*global Observer getHiddenClass isIdentifier hasHiddenClass tagMember global mkAssignStmt escodegen add console mkIdentifier mkCallStmt */
 
 Observer.prototype.beforeMemberWrite = function(pos, obj, prop, val) {
 	var obj_klass = getHiddenClass(obj);
@@ -28,18 +28,46 @@ Observer.prototype.atFunctionReturn = function(pos, fn, ret) {
 
 
 Observer.prototype.done = function() {
-	var decls = [];
+	var decls = [], globals = [];
 	var global_class = getHiddenClass(global);
 	
 	for (var p in global_class.properties) {
 		var prop = p.substring(2);
-		decls.push(mkDecl(prop, global_class.properties[p].generate_asg(decls)));
+		globals.push(prop);
+		decls.push(mkAssignStmt(mkIdentifier(prop), global_class.properties[p].generate_asg(decls)));
 	}
 	
 	unfold_asgs(decls);
 	decls = sort_decls(decls);
 	
-	return decls.map(escodegen.generate).join('\n');
+	var prog = {
+		type: 'Program',
+		body: [{
+			type: 'VariableDeclaration',
+			declarations: globals.map(function(global) {
+				return {
+					type: 'VariableDeclarator',
+					id: mkIdentifier(global),
+					init: null
+				};
+			}),
+			kind: 'var'
+		},
+		mkCallStmt({
+			type: 'FunctionExpression',
+			id: null,
+			params: [],
+			defaults: [],
+			body: {
+				type: 'BlockStatement',
+				body: decls
+			},
+			rest: null,
+			generator: false,
+			expression: false
+		}, [])]
+	};
+return escodegen.generate(prog);
 };
 
 function mkDecl(name, value) {
@@ -135,6 +163,7 @@ function unfold_asgs(decls) {
 					unfold(nd.init, nd, 'init', root);
 				break;
 			default:
+				debugger;
 				throw new Error("no idea how to handle " + nd.type);
 			}
 		}

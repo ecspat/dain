@@ -1,3 +1,6 @@
-var $$NUMBER$$ = Math.random();
-var x = $$NUMBER$$;
-var y = $$NUMBER$$ || String($$NUMBER$$);
+var x, y;
+(function() {
+	var $$NUMBER$$ = Math.random();
+	x = $$NUMBER$$;
+	y = $$NUMBER$$ || String($$NUMBER$$);
+})();
