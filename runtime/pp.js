@@ -24,11 +24,11 @@ function mkAssignStmt(lhs, rhs) {
 	};
 }
 
-function mkCallStmt(callee, args) {
+function mkCallStmt(callee, args, isNew) {
 	return {
 		type: 'ExpressionStatement',
 		expression: {
-			type: 'CallExpression',
+			type: isNew ? 'NewExpression' : 'CallExpression',
 			callee: callee,
 			'arguments': args
 		}

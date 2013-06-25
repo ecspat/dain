@@ -108,23 +108,40 @@ Observer.prototype.atFunctionEntry = function(pos, recv, args) {
 };
 
 Observer.prototype.beforeFunctionCall = function(pos, callee, args) {
-	if (hasHiddenClass(callee)) {
+	this.beforeCall(pos, null, callee, args, 'function');
+};
+
+Observer.prototype.beforeMethodCall = function(pos, obj, prop, _, args) {
+	if(obj)
+		this.beforeCall(pos, obj, obj[prop], args, 'method');
+};
+
+Observer.prototype.beforeNewExpression = function(pos, callee, args) {
+	this.beforeCall(pos, null, callee, args, 'new');
+};
+
+Observer.prototype.beforeCall = function(pos, recv, callee, args, kind) {
+	if (typeof callee === 'function' && hasHiddenClass(callee)) {
 		var callee_class = getHiddenClass(callee);
 		if (callee_class instanceof CallBackClass) {
 			callee_class.fn.used_params[callee_class.index] = true;
 			var arg_classes = args.map(getHiddenClass);
+			recv = recv && getHiddenClass(recv);
 			
 			// record call, but only if there isn't already an equivalent call
 			var global_class = getHiddenClass(global);
 			for(var i=0,n=global_class.calls.length;i<n;++i) {
 				var call = global_class.calls[i];
-				if(call.callee === callee_class && array_eq(call.args, arg_classes))
+				if(call.callee === callee_class && array_eq(call.args, arg_classes) &&
+				   call.kind === kind && call.recv === recv)
 					return;
 			}
 			
 			global_class.calls.push({
 				callee: callee_class,
-				args: arg_classes
+				recv: recv,
+				args: arg_classes,
+				kind: kind
 			});
 		}
 	}

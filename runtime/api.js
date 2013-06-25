@@ -9,7 +9,7 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global Observer getHiddenClass isIdentifier hasHiddenClass tagMember global mkAssignStmt escodegen add console mkIdentifier mkCallStmt */
+/*global Observer getHiddenClass isIdentifier hasHiddenClass tagMember global mkAssignStmt escodegen add console mkIdentifier mkCallStmt mkMemberExpression */
 
 Observer.prototype.beforeMemberWrite = function(pos, obj, prop, val) {
 	var obj_klass = getHiddenClass(obj);
@@ -40,15 +40,26 @@ Observer.prototype.done = function() {
 	
 	// create calls for all observed callback invocations
 	for(var i=0,n=global_class.calls.length;i<n;++i) {
-		var call = global_class.calls[i];
-		decls.push(mkCallStmt(mkIdentifier(call.callee.mkTempName()), call.args.map(function(arg) { return arg.generate_asg(); })));
+		var call = global_class.calls[i],
+			callee = mkIdentifier(call.callee.mkTempName()),
+			args = call.args.map(function(arg) { return arg.generate_asg(); });
+		
+		if(call.kind === 'function') {
+			decls.push(mkCallStmt(callee, args));
+		} else if(call.kind === 'method') {
+			callee = mkMemberExpression(callee, 'call');
+			args.unshift(call.recv.generate_asg());
+			decls.push(mkCallStmt(callee, args));
+		} else if(call.kind === 'new') {
+			decls.push(mkCallStmt(callee, args, true));
+		}
 	}
 
 	// untangle declarations
 	unfold_asgs(decls);
 	decls = sort_decls(decls);
 	
-	// wrap everything into a module
+	// wrap everything into a call.args.map(function(arg) { return arg.generate_asg(); })
 	var prog = {
 		type: 'Program',
 		body: [{
