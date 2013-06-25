@@ -112,8 +112,16 @@ Observer.prototype.beforeFunctionCall = function(pos, callee, args) {
 };
 
 Observer.prototype.beforeMethodCall = function(pos, obj, prop, _, args) {
-	if(obj)
-		this.beforeCall(pos, obj, obj[prop], args, 'method');
+	if(obj) {
+		var callee = obj[prop];
+		// flatten out reflective calls
+		if(callee === Function.prototype.call)
+			this.beforeCall(pos, args[0], obj, Array.prototype.slice.call(args, 1), 'method');
+		else if(callee === Function.prototype.apply)
+			this.beforeCall(pos, args[0], obj, args[1], 'method');
+		else
+			this.beforeCall(pos, obj, callee, args, 'method');
+	}
 };
 
 Observer.prototype.beforeNewExpression = function(pos, callee, args) {
