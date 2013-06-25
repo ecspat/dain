@@ -9,7 +9,7 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
  
-/*global BOOLEAN NUMBER STRING UNDEFINED NULL REGEXP ObjClass FunctionClass InstanceClass GlobalClass CallBackClass setHiddenProp Observer isIdentifier array_eq*/
+/*global BOOLEAN NUMBER STRING UNDEFINED NULL REGEXP ObjClass FunctionClass InstanceClass GlobalClass CallBackClass setHiddenProp Observer isIdentifier array_eq global*/
 
 function getHiddenClass(obj) {
 	switch(typeof obj) {
@@ -107,22 +107,22 @@ Observer.prototype.atFunctionEntry = function(pos, recv, args) {
 	}
 };
 
-Observer.prototype.beforeFunctionCall = function(pos, callee, args, caller) {
+Observer.prototype.beforeFunctionCall = function(pos, callee, args) {
 	if (hasHiddenClass(callee)) {
-		var callee_class = getHiddenClass(callee),
-			caller_class = getHiddenClass(caller);
+		var callee_class = getHiddenClass(callee);
 		if (callee_class instanceof CallBackClass) {
 			callee_class.fn.used_params[callee_class.index] = true;
 			var arg_classes = args.map(getHiddenClass);
 			
 			// record call, but only if there isn't already an equivalent call
-			for(var i=0,n=caller_class.calls.length;i<n;++i) {
-				var call = caller_class.calls[i];
+			var global_class = getHiddenClass(global);
+			for(var i=0,n=global_class.calls.length;i<n;++i) {
+				var call = global_class.calls[i];
 				if(call.callee === callee_class && array_eq(call.args, arg_classes))
 					return;
 			}
 			
-			caller_class.calls.push({
+			global_class.calls.push({
 				callee: callee_class,
 				args: arg_classes
 			});

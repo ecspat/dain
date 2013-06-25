@@ -20,7 +20,6 @@ function FunctionClass(fn, line, offset) {
 	this.setPropClass('$$prototype', this.prototype_class);
 	this.callback_classes = [];
 	this.used_params = [];
-	this.calls = [];
 }
 FunctionClass.prototype = Object.create(HiddenClass.prototype);
 

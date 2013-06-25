@@ -14,6 +14,7 @@
 function GlobalClass(global) {
     HiddenClass.call(this);
     this.obj = global;
+    this.calls = [];
 }
 GlobalClass.prototype = Object.create(HiddenClass.prototype);
 

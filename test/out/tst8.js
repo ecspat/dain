@@ -12,6 +12,6 @@ var register, invoke, cbs;
 
 	// not ideal, this should actually be an array
 	cbs = {};
-
+	
 	function_3_15_0();
 })();

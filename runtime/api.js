@@ -31,15 +31,24 @@ Observer.prototype.done = function() {
 	var decls = [], globals = [];
 	var global_class = getHiddenClass(global);
 	
+	// create definitions for all global variables
 	for (var p in global_class.properties) {
 		var prop = p.substring(2);
 		globals.push(prop);
 		decls.push(mkAssignStmt(mkIdentifier(prop), global_class.properties[p].generate_asg(decls)));
 	}
 	
+	// create calls for all observed callback invocations
+	for(var i=0,n=global_class.calls.length;i<n;++i) {
+		var call = global_class.calls[i];
+		decls.push(mkCallStmt(mkIdentifier(call.callee.mkTempName()), call.args.map(function(arg) { return arg.generate_asg(); })));
+	}
+
+	// untangle declarations
 	unfold_asgs(decls);
 	decls = sort_decls(decls);
 	
+	// wrap everything into a module
 	var prog = {
 		type: 'Program',
 		body: [{
@@ -67,7 +76,9 @@ Observer.prototype.done = function() {
 			expression: false
 		}, [])]
 	};
-return escodegen.generate(prog);
+	
+	// and return it
+	return escodegen.generate(prog);
 };
 
 function mkDecl(name, value) {

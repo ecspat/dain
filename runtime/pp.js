@@ -186,12 +186,6 @@ FunctionClass.prototype.generate_asg = function(decls) {
 				body.push(mkAssignStmt(mkMemberExpression(mkThis(), p.substring(2)),  this.fn.__instance_class.properties[p].generate_asg(decls)));
 			}
 			
-	// handle callback invocations
-	for(i=0,n=this.calls.length;i<n;++i) {
-		var call = this.calls[i];
-		body.push(mkCallStmt(mkIdentifier(call.callee.mkTempName()), call.args.map(function(arg) { return arg.generate_asg(); })));
-	}
-
 	// handle return type
 	if(this.properties['return'])
 		body.push(mkReturn(this.properties['return'].generate_asg(decls)));
