@@ -41,14 +41,14 @@ Observer.prototype.done = function() {
 	// create calls for all observed callback invocations
 	for(var i=0,n=global_class.calls.length;i<n;++i) {
 		var call = global_class.calls[i],
-			callee = mkIdentifier(call.callee.mkTempName()),
-			args = call.args.map(function(arg) { return arg.generate_asg(); });
+			callee = call.callee.generate_asg(decls),
+			args = call.args.map(function(arg) { return arg.generate_asg(decls); });
 		
 		if(call.kind === 'function') {
 			decls.push(mkCallStmt(callee, args));
 		} else if(call.kind === 'method') {
 			callee = mkMemberExpression(callee, 'call');
-			args.unshift(call.recv.generate_asg());
+			args.unshift(call.recv.generate_asg(decls));
 			decls.push(mkCallStmt(callee, args));
 		} else if(call.kind === 'new') {
 			decls.push(mkCallStmt(callee, args, true));
@@ -59,7 +59,7 @@ Observer.prototype.done = function() {
 	unfold_asgs(decls);
 	decls = sort_decls(decls);
 	
-	// wrap everything into a call.args.map(function(arg) { return arg.generate_asg(); })
+	// wrap everything into a module
 	var prog = {
 		type: 'Program',
 		body: [{

@@ -9,7 +9,7 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
  
-/*global BOOLEAN NUMBER STRING UNDEFINED NULL REGEXP ObjClass ArrayClass FunctionClass InstanceClass GlobalClass CallBackClass setHiddenProp Observer isIdentifier array_eq global*/
+/*global BOOLEAN NUMBER STRING UNDEFINED NULL REGEXP ObjClass ArrayClass FunctionClass InstanceClass GlobalClass ClientObjClass setHiddenProp Observer isIdentifier array_eq global*/
 
 function getHiddenClass(obj) {
 	switch(typeof obj) {
@@ -106,11 +106,11 @@ Observer.prototype.atFunctionEntry = function(pos, recv, args) {
 	if(recv instanceof args.callee)
 		tagNew(recv, args.callee);
 		
-	// tag client callbacks when we first see them
+	// tag client objects when we first see them
 	var fn_class = getHiddenClass(args.callee);
 	for(var i=0,n=args.length;i<n;++i) {
-		if(typeof args[i] === 'function' && !hasHiddenClass(args[i])) {
-			setHiddenProp(args[i], '__class', CallBackClass.make(fn_class, i));
+		if(!hasHiddenClass(args[i])) {
+			setHiddenProp(args[i], '__class', ClientObjClass.make(fn_class, i));
 		}
 	}
 };
@@ -139,8 +139,7 @@ Observer.prototype.beforeNewExpression = function(pos, callee, args) {
 Observer.prototype.beforeCall = function(pos, recv, callee, args, kind) {
 	if (typeof callee === 'function' && hasHiddenClass(callee)) {
 		var callee_class = getHiddenClass(callee);
-		if (callee_class instanceof CallBackClass) {
-			callee_class.fn.used_params[callee_class.index] = true;
+		if (callee_class instanceof ClientObjClass) {
 			var arg_classes = Array.prototype.map.call(args, getHiddenClass);
 			recv = kind === 'method' && getHiddenClass(recv);
 			

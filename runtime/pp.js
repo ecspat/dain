@@ -9,7 +9,7 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global FunctionClass HiddenClass InstanceClass ObjClass ArrayClass UnionClass PrimitiveClass GlobalClass add NUMBER BOOLEAN STRING REGEXP UNDEFINED NULL */
+/*global FunctionClass HiddenClass InstanceClass ObjClass ArrayClass UnionClass PrimitiveClass GlobalClass ClientObjClass add NUMBER BOOLEAN STRING REGEXP UNDEFINED NULL */
 
 // helper functions for creating ASTs
 function mkAssignStmt(lhs, rhs) {
@@ -148,22 +148,7 @@ FunctionClass.prototype.generate_asg = function(decls) {
 		params.push(mkIdentifier('x' + i));
 		
 		if (this.used_params[i]) {
-			var callback_class = this.callback_classes[i],
-				callback_tmp_name = callback_class.mkTempName();
-
-			// generate declaration for callback variable
-			decls.push({
-				type: 'VariableDeclaration',
-				declarations: [{
-					type: 'VariableDeclarator',
-					id: mkIdentifier(callback_tmp_name),
-					init: null
-				}],
-				kind: 'var'
-			});
-
-			// store callback into variable
-			body.push(mkAssignStmt(mkIdentifier(callback_tmp_name), mkIdentifier('x' + i)));
+			this.generateClientObjStore(i);
 		}
 	}
 				 
@@ -191,6 +176,36 @@ FunctionClass.prototype.generate_asg = function(decls) {
 		body.push(mkReturn(this.properties['return'].generate_asg(decls)));
 		
 	return this.asg;
+};
+
+// generate a store statement for parameter i
+FunctionClass.prototype.generateClientObjStore = function(i) {
+	var klass = this.client_obj_classes[i],
+		tmp_name = klass.mkTempName(),
+		body = this.asg.body.body,
+		idx;
+	
+	// compute index at which to insert the store statement
+	if(body.length > 0 && body[body.length-1].type === 'ReturnStatement') {
+		idx = body.length-1;
+	} else {
+		idx = body.length;
+	}
+	
+	body.splice(idx, 0, mkAssignStmt(mkIdentifier(tmp_name), mkIdentifier('x' + i)));
+};
+
+FunctionClass.prototype.parameterUsed = function(i) {
+	if(!this.used_params[i]) {
+		this.used_params[i] = true;
+		
+		if(this.asg) {
+			this.generateClientObjStore(i);
+			
+			for(var j=this.asg.params.length;j<=i;++j)
+				this.asg.params[j] = mkIdentifier('x' + j);
+		}
+	}
 };
 
 ObjClass.prototype.generate_asg = function(decls) {
@@ -265,6 +280,33 @@ UnionClass.prototype.generate_asg = function(decls) {
 	
 PrimitiveClass.prototype.generate_asg = function(decls) {
     return this.asg;
+};
+
+ClientObjClass.prototype.generate_asg = function(decls) {
+	if (this.asg)
+		return mkIdentifier(this.asg.name);
+
+	var tmp_name = this.mkTempName();
+	this.asg = mkIdentifier(tmp_name);
+	
+	// generate declaration for global variable to hold this client object
+	if (!decls[0] || decls[0].type !== 'VariableDeclaration') {
+		decls.unshift({
+			type: 'VariableDeclaration',
+			declarations: [],
+			kind: 'var'
+		});
+	}
+	decls[0].declarations.push({
+		type: 'VariableDeclarator',
+		id: mkIdentifier(tmp_name),
+		init: null
+	});
+	
+	// notify function that parameter was used
+	this.fn.parameterUsed(this.index);
+	
+	return this.asg;
 };
 
 NUMBER.asg = { type: 'CallExpression', callee: mkMemberExpression("Math", "random"), 'arguments': [], temp_name: '$$NUMBER$$' };

@@ -11,17 +11,18 @@
  
  /*global HiddenClass*/
 
-function CallBackClass(fn, i) {
+/** a class representing a client object passed in as a function argument */
+function ClientObjClass(fn, i) {
 	HiddenClass.call(this);
 	this.fn = fn;
 	this.index = i;
 }
-CallBackClass.prototype = Object.create(HiddenClass.prototype);
+ClientObjClass.prototype = Object.create(HiddenClass.prototype);
 
-CallBackClass.make = function(fn, i) {
-	return fn.callback_classes[i] || (fn.callback_classes[i] = new CallBackClass(fn, i));
+ClientObjClass.make = function(fn, i) {
+	return fn.client_obj_classes[i] || (fn.client_obj_classes[i] = new ClientObjClass(fn, i));
 };
 
-CallBackClass.prototype.mkTempName = function() {
+ClientObjClass.prototype.mkTempName = function() {
 	return this.fn.mkTempName() + "_" + this.index;
 };
