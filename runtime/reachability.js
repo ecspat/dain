@@ -13,24 +13,29 @@
 
 HiddenClass.prototype.markReachable = function() {
 	this.refcount = (this.refcount || 0) + 1;
-	if(this.refcount === 1)
+	if (this.refcount === 1) {
 		this.markSuccessors();
+	}
 };
 
 FunctionClass.prototype.markReachable = function() {
-    HiddenClass.prototype.markReachable.call(this);
-    for(var p in this.properties)
-	if(p.substring(0, 2) === '$$') {
-	    var prop = this.properties[p];
-	    if(!(prop instanceof ObjClass) || !prop.isEmpty)
-		++this.refcount;
+	HiddenClass.prototype.markReachable.call(this);
+	for (var p in this.properties) {
+		if (p.substring(0, 2) === '$$') {
+			var prop = this.properties[p];
+			if (!(prop instanceof ObjClass) || !prop.isEmpty) {
+				++this.refcount;
+			}
+		}
 	}
 };
 
 HiddenClass.prototype.markSuccessors = function() {
-	for(var p in this.properties)
-		if(this.properties.hasOwnProperty(p))
+	for (var p in this.properties) {
+		if (this.properties.hasOwnProperty(p)) {
 			this.properties[p].markReachable();
+		}
+	}
 };
 
 UnionClass.prototype.markSuccessors = function() {

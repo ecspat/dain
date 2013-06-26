@@ -27,6 +27,7 @@ exports.getRuntimeSource = function() {
                 include('FunctionClass') +
                 include('CallBackClass') +
                 include('ObjClass') +
+                include('ArrayClass') +
                 include('InstanceClass') +
                 include('PrimitiveClass') +
                 include('UnionClass') +

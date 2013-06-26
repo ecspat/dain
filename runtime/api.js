@@ -163,6 +163,10 @@ function unfold_asgs(decls) {
 				for(i=0,n=nd.properties.length;i<n;++i)
 					unfold(nd.properties[i], nd.properties, i, root);
 				break;
+			case 'ArrayExpression':
+				for(i=0,n=nd.elements.length;i<n;++i)
+					unfold(nd.elements[i], nd.elements, i, root);
+				break;
 			case 'Property':
 				unfold(nd.value, nd, 'value', root);
 				break;

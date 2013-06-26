@@ -10,8 +10,7 @@ var register, invoke, cbs;
 	invoke = function () {
 	};
 
-	// not ideal, this should actually be an array
-	cbs = {};
+	cbs = [];
 	
 	function_3_15_0.call({}, Math.random());
 })();

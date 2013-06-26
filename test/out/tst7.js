@@ -10,8 +10,7 @@ var register, invoke, cbs;
 	invoke = function () {
 	};
 
-	// not ideal, this should actually be an array
-	var objlit_11 = {};
-	cbs = objlit_11;
-	function_3_15_0.call(objlit_11);
+	var arraylit_1_10 = [];
+	cbs = arraylit_1_10;
+	function_3_15_0.call(arraylit_1_10);
 })();

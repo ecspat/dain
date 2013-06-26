@@ -9,7 +9,7 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global FunctionClass HiddenClass InstanceClass ObjClass UnionClass PrimitiveClass GlobalClass add NUMBER BOOLEAN STRING REGEXP UNDEFINED NULL */
+/*global FunctionClass HiddenClass InstanceClass ObjClass ArrayClass UnionClass PrimitiveClass GlobalClass add NUMBER BOOLEAN STRING REGEXP UNDEFINED NULL */
 
 // helper functions for creating ASTs
 function mkAssignStmt(lhs, rhs) {
@@ -207,6 +207,28 @@ ObjClass.prototype.generate_asg = function(decls) {
 			props.push(mkProperty(p.substring(2), this.properties[p].generate_asg(decls)));
 		}
 
+	return this.asg;
+};
+
+// TODO: this ignores non-numeric properties
+ArrayClass.prototype.generate_asg = function(decls) {
+	if(this.asg)
+		return this.asg;
+		
+	var elts = [];
+	this.asg = { type: 'ArrayExpression',
+				 elements: elts,
+				 temp_name: this.mkTempName() };
+				 
+	for(var p in this.properties) {
+		if(p.substring(0, 2) === '$$') {
+			var idx = Number(p.substring(2));
+			if(idx >= 0) {
+				elts[idx] = this.properties[p].generate_asg(decls);
+			}
+		}
+	}
+	
 	return this.asg;
 };
 	

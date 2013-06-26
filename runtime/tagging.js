@@ -9,7 +9,7 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
  
-/*global BOOLEAN NUMBER STRING UNDEFINED NULL REGEXP ObjClass FunctionClass InstanceClass GlobalClass CallBackClass setHiddenProp Observer isIdentifier array_eq global*/
+/*global BOOLEAN NUMBER STRING UNDEFINED NULL REGEXP ObjClass ArrayClass FunctionClass InstanceClass GlobalClass CallBackClass setHiddenProp Observer isIdentifier array_eq global*/
 
 function getHiddenClass(obj) {
 	switch(typeof obj) {
@@ -87,6 +87,14 @@ Observer.prototype.afterObjectExpression = function(pos, obj) {
 				tagMember(obj_klass, p, obj[p]);
 		}
 	}
+};
+
+Observer.prototype.afterArrayExpression = function(pos, ary) {
+	if(!ary.hasOwnProperty('__class'))
+		setHiddenProp(ary, '__class', ArrayClass.make(ary, pos.start_line, pos.start_offset));
+	var klass = getHiddenClass(ary);
+	for(var i=0,n=ary.length;i<n;++i)
+		klass.setPropClass('$$' + i, getHiddenClass(ary[i]));
 };
 
 Observer.prototype.afterFunctionExpression = function(pos, fn) {
