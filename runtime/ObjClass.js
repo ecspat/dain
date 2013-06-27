@@ -9,7 +9,10 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global HiddenClass mkProperty */
+/*global require exports */
+
+var HiddenClass = require('./HiddenClass').HiddenClass,
+    mkProperty = require('./ast').mkProperty;
 
 /** An ObjClass represents all objects arising from a textual object literal. */
 function ObjClass(obj, line, offset) {
@@ -60,3 +63,5 @@ ObjClass.prototype.isEmpty = function() {
 			return false;
 	return true;
 };
+
+exports.ObjClass = ObjClass;

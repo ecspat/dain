@@ -9,7 +9,29 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
  
- /*global getHiddenClass hasHiddenClass global array_eq escodegen tagFn tagNew tagObjLit tagMember mkAssignStmt mkIdentifier mkCallStmt mkMemberExpression unfold_asgs sort_decls setHiddenProp ArrayClass ClientObjClass */
+ /*global require exports escodegen */
+ 
+ var ArrayClass = require('./ArrayClass').ArrayClass,
+     asg = require('./asg'),
+     ast = require('./ast'),
+     ClientObjClass = require('./ClientObjClass').ClientObjClass,
+     GlobalClass = require('./GlobalClass').GlobalClass,
+     // TODO: browserifying the Node module for escodegen gives a result that Zombie doesn't like; strangely enough,
+     //       the pre-browserified escodegen.browser.js module works fine...
+     //escodegen = require('escodegen'),
+     tagging = require('./tagging'),
+     array_eq = require('./util').array_eq,
+     setHiddenClass = tagging.setHiddenClass,
+     hasHiddenClass = tagging.hasHiddenClass,
+     tagFn = tagging.tagFn,
+     tagMember = tagging.tagMember,
+     tagNew = tagging.tagNew,
+     tagObjLit = tagging.tagObjLit,
+     getHiddenClass = tagging.getHiddenClass,
+     mkAssignStmt = ast.mkAssignStmt,
+     mkIdentifier = ast.mkIdentifier,
+     mkCallStmt = ast.mkCallStmt,
+     mkMemberExpression = ast.mkMemberExpression;
 
 /** The observer is notified by the dynamic instrumentation framework of events happening in the instrumented program. */
 function Observer() {}
@@ -37,7 +59,7 @@ Observer.prototype.atFunctionReturn = function(pos, fn, ret) {
 // generate model
 Observer.prototype.done = function() {
 	var decls = [], globals = [];
-	var global_class = getHiddenClass(global);
+	var global_class = GlobalClass.GLOBAL;
 	
 	// create definitions for all global variables
 	for (var p in global_class.properties) {
@@ -64,13 +86,26 @@ Observer.prototype.done = function() {
 	}
 
 	// untangle declarations
-	unfold_asgs(decls);
-	decls = sort_decls(decls);
+	asg.unfold_asgs(decls);
+	decls = asg.sort_decls(decls);
 	
 	// wrap everything into a module
-	var prog = {
-		type: 'Program',
-		body: [{
+	var body = [mkCallStmt({
+		type: 'FunctionExpression',
+		id: null,
+		params: [],
+		defaults: [],
+		body: {
+			type: 'BlockStatement',
+			body: decls
+		},
+		rest: null,
+		generator: false,
+		expression: false
+	}, [])];
+	
+	if (globals.length > 0) {
+		body.unshift({
 			type: 'VariableDeclaration',
 			declarations: globals.map(function(global) {
 				return {
@@ -80,20 +115,12 @@ Observer.prototype.done = function() {
 				};
 			}),
 			kind: 'var'
-		},
-		mkCallStmt({
-			type: 'FunctionExpression',
-			id: null,
-			params: [],
-			defaults: [],
-			body: {
-				type: 'BlockStatement',
-				body: decls
-			},
-			rest: null,
-			generator: false,
-			expression: false
-		}, [])]
+		});
+	}
+	
+	var prog = {
+		type: 'Program',
+		body: body
 	};
 	
 	// and return it
@@ -115,8 +142,7 @@ Observer.prototype.afterObjectExpression = function(pos, obj) {
 
 // tag newly created array and record its property classes
 Observer.prototype.afterArrayExpression = function(pos, ary) {
-	if(!ary.hasOwnProperty('__class'))
-		setHiddenProp(ary, '__class', ArrayClass.make(ary, pos.start_line, pos.start_offset));
+	setHiddenClass(ary, ArrayClass.make(ary, pos.start_line, pos.start_offset));
 	var klass = getHiddenClass(ary);
 	for(var i=0,n=ary.length;i<n;++i)
 		klass.setPropClass('$$' + i, getHiddenClass(ary[i]));
@@ -137,7 +163,7 @@ Observer.prototype.atFunctionEntry = function(pos, recv, args) {
 	var fn_class = getHiddenClass(args.callee);
 	for(var i=0,n=args.length;i<n;++i) {
 		if(!hasHiddenClass(args[i])) {
-			setHiddenProp(args[i], '__class', ClientObjClass.make(fn_class, i));
+			setHiddenClass(args[i], ClientObjClass.make(fn_class, i));
 		}
 	}
 };
@@ -173,7 +199,7 @@ Observer.prototype.beforeCall = function(pos, recv, callee, args, kind) {
 			recv = kind === 'method' && getHiddenClass(recv);
 			
 			// record call, but only if there isn't already an equivalent call
-			var global_class = getHiddenClass(global);
+			var global_class = GlobalClass.GLOBAL;
 			for(var i=0,n=global_class.calls.length;i<n;++i) {
 				var call = global_class.calls[i];
 				if(call.callee === callee_class && array_eq(call.args, arg_classes) &&
@@ -190,3 +216,5 @@ Observer.prototype.beforeCall = function(pos, recv, callee, args, kind) {
 		}
 	}
 };
+
+exports.Observer = Observer;

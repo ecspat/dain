@@ -9,7 +9,9 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global Observer getHiddenClass isIdentifier hasHiddenClass tagMember global mkAssignStmt escodegen add console mkIdentifier mkCallStmt mkMemberExpression */
+/*global require exports */
+
+var isIdentifier = require('./util').isIdentifier;
 
 /**
  * Helper functions for creating AST nodes.
@@ -128,3 +130,14 @@ function isEmptyObjectLiteral(obj) {
 	return obj.type === 'ObjectExpression' &&
 		   obj.properties.length === 0;
 }
+
+exports.isEmptyObjectLiteral = isEmptyObjectLiteral;
+exports.mkAssignStmt = mkAssignStmt;
+exports.mkCallStmt = mkCallStmt;
+exports.mkDecl = mkDecl;
+exports.mkIdentifier = mkIdentifier;
+exports.mkMemberExpression = mkMemberExpression;
+exports.mkOr = mkOr;
+exports.mkProperty = mkProperty;
+exports.mkReturn = mkReturn;
+exports.mkThis = mkThis;

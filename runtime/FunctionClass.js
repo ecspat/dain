@@ -9,7 +9,17 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global HiddenClass ObjClass getHiddenClass setHiddenProperty add mkIdentifier isEmptyObjectLiteral mkAssignStmt mkMemberExpression mkThis mkReturn */
+/*global require exports */
+
+var HiddenClass = require('./HiddenClass').HiddenClass,
+    ObjClass = require('./ObjClass').ObjClass,
+    ast = require('./ast'),
+    mkIdentifier = ast.mkIdentifier,
+    isEmptyObjectLiteral = ast.isEmptyObjectLiteral,
+    mkAssignStmt = ast.mkAssignStmt,
+    mkMemberExpression = ast.mkMemberExpression,
+    mkThis = ast.mkThis,
+    mkReturn = ast.mkReturn;
 
 /** This class represents all function objects arising from a particular textual definition. */
 function FunctionClass(fn, line, offset) {
@@ -128,3 +138,5 @@ FunctionClass.prototype.parameterUsed = function(i) {
 		}
 	}
 };
+
+exports.FunctionClass = FunctionClass;

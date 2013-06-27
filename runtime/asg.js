@@ -9,7 +9,12 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global add mkDecl mkIdentifier console*/
+/*global require exports console*/
+
+var add = require('./util').add,
+    ast = require('./ast'),
+    mkDecl = ast.mkDecl,
+    mkIdentifier = ast.mkIdentifier;
 
 /**
  * Our model is at first represented as an ASG (abstract syntax graph), i.e., an AST where
@@ -139,3 +144,6 @@ function sort_decls(decls) {
 		
 	return res;
 }
+
+exports.unfold_asgs = unfold_asgs;
+exports.sort_decls = sort_decls;

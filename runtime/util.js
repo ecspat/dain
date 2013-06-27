@@ -9,31 +9,33 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
+/*global exports*/
+
 // utility function for setting a non-enumerable, writable property
-function setHiddenProp(obj, prop, val) {
+exports.setHiddenProp = function(obj, prop, val) {
 	Object.defineProperty(obj, prop, { enumerable: false, writable: true, value: val });
 	return val;
-}
+};
 	
 // utility function for adding element to array if it isn't in there yet
-function add(array, elt) {
+exports.add = function(array, elt) {
 	for(var i=0;i<array.length;++i)
 		if(array[i] === elt)
 			return;
 	array[i] = elt;
-}
+};
 
 // utility function for doing 1-level comparison of arrays
-function array_eq(a, b) {
+exports.array_eq = function(a, b) {
 	if(a.length !== b.length)
 		return false;
 	for(var i=0,n=a.length;i<n;++i)
 		if(a[i] !== b[i])
 			return false;
 	return true;
-}
+};
 
 // rough check whether a given string is a valid identifier
-function isIdentifier(str) {
+exports.isIdentifier = function(str) {
 	return str.match(/^[a-zA-Z_$][0-9a-zA-Z_$]*$/);
-}
+};

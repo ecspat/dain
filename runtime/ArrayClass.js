@@ -9,7 +9,9 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global HiddenClass*/
+/*global require exports */
+
+var HiddenClass = require('./HiddenClass').HiddenClass;
 
 /**
  * An ArrayClass represents all instances of a given source-level array literal.
@@ -61,3 +63,4 @@ ArrayClass.prototype.generate_asg = function(decls) {
 	return this.asg;
 };
 	
+exports.ArrayClass = ArrayClass;

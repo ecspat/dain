@@ -9,7 +9,52 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
  
-/*global GlobalClass InstanceClass FunctionClass ObjClass setHiddenClass getHiddenClass setHiddenProp isIdentifier*/
+/*global require exports */
+
+var FunctionClass = require('./FunctionClass').FunctionClass,
+    GlobalClass = require('./GlobalClass').GlobalClass,
+    InstanceClass = require('./InstanceClass').InstanceClass,
+    ObjClass = require('./ObjClass').ObjClass,
+    PrimitiveClass = require('./PrimitiveClass').PrimitiveClass,
+    util = require('./util'),
+    isIdentifier = util.isIdentifier,
+    setHiddenProp = util.setHiddenProp;
+
+// determine hidden class of obj
+function getHiddenClass(obj) {
+	switch(typeof obj) {
+	case "boolean":
+		return PrimitiveClass.BOOLEAN;
+	case "number":
+		return PrimitiveClass.NUMBER;
+	case "string":
+		return PrimitiveClass.STRING;
+	case "undefined":
+		return PrimitiveClass.UNDEFINED;
+	case "object":
+	case "function":
+		if(!obj)
+			return PrimitiveClass.NULL;
+		if(obj instanceof RegExp)
+			return PrimitiveClass.REGEXP;
+		if(hasHiddenClass(obj))
+			return obj.__class;
+		return typeof obj === "object" ? tagObjLit(obj, -1, -1) : tagFn(obj, -1, -1);
+	default:
+		throw new Error("cannot determine hidden class");
+	}
+}
+
+function setHiddenClass(obj, klass) {
+	setHiddenProp(obj, '__class', klass);
+}
+
+function hasHiddenClass(obj) {
+	var tp = typeof obj;
+	if(tp === 'object' || tp === 'function')
+		return !obj || obj.hasOwnProperty('__class');
+	return true;
+}
 
 function tagGlobal(global) {
 	if(!global.hasOwnProperty('__class'))
@@ -45,3 +90,12 @@ function tagMember(obj_klass, prop, val) {
 		prop = "*";
 	obj_klass.setPropClass('$$' + prop, val_klass);
 }
+
+exports.getHiddenClass = getHiddenClass;
+exports.setHiddenClass = setHiddenClass;
+exports.hasHiddenClass = hasHiddenClass;
+exports.tagGlobal = tagGlobal;
+exports.tagNew = tagNew;
+exports.tagFn = tagFn;
+exports.tagObjLit = tagObjLit;
+exports.tagMember = tagMember;

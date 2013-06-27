@@ -9,7 +9,12 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global HiddenClass ObjClass add mkOr */
+/*global require exports */
+
+var HiddenClass = require('./HiddenClass').HiddenClass,
+    ObjClass = require('./ObjClass').ObjClass,
+    mkOr = require('./ast').mkOr,
+    add = require('./util').add;
 
 /** A UnionClass represents an alternative of several hidden classes. We keep the member
  * classes sorted by ID to ensure canonicity. */
@@ -64,6 +69,22 @@ UnionClass.prototype.generate_asg = function(decls) {
     return this.asg;
 };
 
+HiddenClass.prototype.unionWith = function(that) {
+	if(this.id === that.id)
+		return this;
+		
+	// avoid creating nested union classes
+	if(that instanceof UnionClass) {
+		var res = this;
+		that.members.forEach(function(member) {
+			res = res.unionWith(member);
+		});
+		return res;
+	} else {
+		return new UnionClass(this, that);
+	}
+};
+
 UnionClass.prototype.unionWith = function(that) {
 	if(that instanceof UnionClass) {
 		var res = this;
@@ -81,3 +102,4 @@ UnionClass.prototype.unionWith = function(that) {
 	}
 };
 	
+exports.UnionClass = UnionClass;

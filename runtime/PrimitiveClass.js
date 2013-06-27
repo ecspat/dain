@@ -9,7 +9,12 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global HiddenClass mkMemberExpression mkIdentifier */
+/*global require exports */
+
+var HiddenClass = require('./HiddenClass').HiddenClass,
+    ast = require('./ast'),
+    mkIdentifier = ast.mkIdentifier,
+    mkMemberExpression = ast.mkMemberExpression;
 
 /** Primitive classes correspond to JavaScript's primitive types. */
 function PrimitiveClass(name) {
@@ -20,12 +25,12 @@ PrimitiveClass.prototype = Object.create(HiddenClass.prototype);
 	
 PrimitiveClass.prototype.setPropClass = function() {};
 	
-var BOOLEAN = new PrimitiveClass("$BOOLEAN$"),
-    NUMBER = new PrimitiveClass("$NUMBER$"),
-    STRING = new PrimitiveClass("$STRING$"),
-    UNDEFINED = new PrimitiveClass("void(0)"),
-    NULL = new PrimitiveClass("null"),
-    REGEXP = new PrimitiveClass("$REGEXP$");
+var BOOLEAN = PrimitiveClass.BOOLEAN = new PrimitiveClass("$BOOLEAN$"),
+    NUMBER = PrimitiveClass.NUMBER = new PrimitiveClass("$NUMBER$"),
+    STRING = PrimitiveClass.STRING = new PrimitiveClass("$STRING$"),
+    UNDEFINED = PrimitiveClass.UNDEFINED = new PrimitiveClass("void(0)"),
+    NULL = PrimitiveClass.NULL = new PrimitiveClass("null"),
+    REGEXP = PrimitiveClass.REGEXP = new PrimitiveClass("$REGEXP$");
     
 PrimitiveClass.prototype.generate_asg = function(decls) {
     return this.asg;
@@ -56,3 +61,5 @@ NULL.generate_asg = function() {
 UNDEFINED.unionWith = function(klass) {
 	return klass;
 };
+
+exports.PrimitiveClass = PrimitiveClass;

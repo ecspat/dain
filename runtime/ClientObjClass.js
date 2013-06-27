@@ -9,7 +9,10 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
  
- /*global HiddenClass mkIdentifier*/
+ /*global require exports */
+ 
+ var HiddenClass = require('./HiddenClass').HiddenClass,
+     mkIdentifier = require('./ast').mkIdentifier;
 
 /** This class represents all client objects (including functions) passed as parameter 'i' to
  * function 'fn'. */
@@ -55,3 +58,4 @@ ClientObjClass.prototype.generate_asg = function(decls) {
 	return this.asg;
 };
 
+exports.ClientObjClass = ClientObjClass;

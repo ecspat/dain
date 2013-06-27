@@ -5,12 +5,17 @@
     "description": "Dynamic API inferencer for JavaScript",
     "dependencies" : {
 		"argparse" : "*",
+		"browserify" : "*",
 		"eavesdropper": "https://github.com/ecspat/eavesdropper/tarball/master",
 		"escodegen": "*",
     	"esprima": "*",
 		"nodeunit" : "*",
 		"temp" : "*",
 		"zombie" : "*"
+    },
+    "repository": {
+    	"type" : "git",
+  		"url" : "https://github.com/ecspat/dain.git"
     },
     "license": "Eclipse"
 }

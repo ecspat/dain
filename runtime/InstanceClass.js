@@ -9,7 +9,10 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global HiddenClass setHiddenProp*/
+/*global require exports */
+
+var HiddenClass = require('./HiddenClass').HiddenClass,
+    setHiddenProp = require('./util').setHiddenProp;
 
 /** An InstanceClass represents all objects created as instances of a function belonging
  * to fnclass. */
@@ -42,3 +45,4 @@ InstanceClass.prototype.generate_asg = function(decls) {
     return this.asg;
 };
 
+exports.InstanceClass = InstanceClass;

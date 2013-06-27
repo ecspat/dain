@@ -9,10 +9,17 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global HiddenClass mkThis mkIdentifier mkDecl */
+/*global require exports */
+
+var HiddenClass = require('./HiddenClass').HiddenClass,
+    ast = require('./ast'),
+    mkDecl = ast.mkDecl,
+    mkThis = ast.mkThis,
+    mkIdentifier = ast.mkIdentifier;
 
 /** Class representing the global object. */
 function GlobalClass(global) {
+	GlobalClass.GLOBAL = this;
     HiddenClass.call(this);
     this.obj = global;
     this.calls = [];
@@ -30,3 +37,5 @@ GlobalClass.prototype.generate_asg = function(decls) {
     }
 	return mkIdentifier(this.name);
 };
+
+exports.GlobalClass = GlobalClass;
