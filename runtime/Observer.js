@@ -9,16 +9,14 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
  
- /*global require exports escodegen */
+ /*global require exports */
  
  var ArrayClass = require('./ArrayClass').ArrayClass,
      asg = require('./asg'),
      ast = require('./ast'),
      ClientObjClass = require('./ClientObjClass').ClientObjClass,
      GlobalClass = require('./GlobalClass').GlobalClass,
-     // TODO: browserifying the Node module for escodegen gives a result that Zombie doesn't like; strangely enough,
-     //       the pre-browserified escodegen.browser.js module works fine...
-     //escodegen = require('escodegen'),
+     escodegen = require('escodegen'),
      tagging = require('./tagging'),
      array_eq = require('./util').array_eq,
      setHiddenClass = tagging.setHiddenClass,

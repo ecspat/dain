@@ -26,19 +26,22 @@ var esprima = require('esprima'),
     ArgumentParser = require('argparse').ArgumentParser;
     
 function instrument(file, load, test, cb) {
-	browserify("./runtime/runtime.js").bundle({ /*debug: true*/ }, function(err, runtime) {
+	var b = browserify("./runtime/runtime.js");
+	b.bundle({ /*debug: true*/ }, function(err, runtime) {
 		if(err)
 			throw new Error(err);
-		
-		runtime += fs.readFileSync(__dirname + '/node_modules/escodegen/escodegen.browser.js', 'utf-8');
-		
+
 		var instrumented_src = runtime + eavesdropper.instrument(fs.readFileSync(file, 'utf-8'), file);
 
 		if (load) {
-			var htmlTmp = temp.openSync({ suffix: '.html' });
+			var htmlTmp = temp.openSync({ suffix: '.html' }),
+			    jsTmp = temp.openSync({ suffix: '.js' });
+			    
+			fs.writeSync(jsTmp.fd, instrumented_src);
+			    
 			fs.writeSync(htmlTmp.fd,
 						"<html><head>\n" +
-						"<script>\n" + instrumented_src + "\n" + "</script>\n" +
+						"<script src='" + jsTmp.path + "'></script>\n" +
 						"</head><body></body>\n" +
 						(test ? "<script>\n" + fs.readFileSync(test, 'utf-8') + "</script>\n" : "") +
 						"</html>\n");
