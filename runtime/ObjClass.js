@@ -54,3 +54,9 @@ ObjClass.prototype.generate_asg = function(decls) {
 	return this.asg;
 };
 
+ObjClass.prototype.isEmpty = function() {
+	for(var p in this.properties)
+		if(p.substring(0, 2) === '$$')
+			return false;
+	return true;
+};

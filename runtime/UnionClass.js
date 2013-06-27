@@ -9,7 +9,7 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global HiddenClass add mkOr */
+/*global HiddenClass ObjClass add mkOr */
 
 /** A UnionClass represents an alternative of several hidden classes. We keep the member
  * classes sorted by ID to ensure canonicity. */
@@ -37,14 +37,25 @@ UnionClass.prototype.setPropClass = function(prop, klass) {
 UnionClass.prototype.generate_asg = function(decls) {
 	if(this.asg)
 		return this.asg;
+		
+	// we often end up with multiple members that are just empty object literals; discard those first
+	var members = [], added_empty_objlit = false;
+	this.members.forEach(function(member) {
+		if(member instanceof ObjClass && member.isEmpty()) {
+			if(added_empty_objlit)
+				return;
+			added_empty_objlit = true;
+		}
+		members.push(member);
+	});
 
-	if(this.members.length === 1) {
-		this.asg = this.members[0].generate_asg(decls);
+	if(members.length === 1) {
+		this.asg = members[0].generate_asg(decls);
 	} else {
-		var n = this.members.length;
-		this.asg = mkOr(this.members[0].generate_asg(decls), this.members[1].generate_asg(decls));
+		var n = members.length;
+		this.asg = mkOr(members[0].generate_asg(decls), members[1].generate_asg(decls));
 		for(var i=2;i<n;++i) {
-			this.asg = mkOr(this.asg, this.members[i].generate_asg(decls));
+			this.asg = mkOr(this.asg, members[i].generate_asg(decls));
 		}
 	}
 	
