@@ -18,7 +18,8 @@ function include(mod) {
 }
 
 exports.getRuntimeSource = function() {
-	return "var __observer;\n" +
+	return fs.readFileSync(__dirname + '/../node_modules/escodegen/escodegen.browser.js', 'utf-8') +
+		   "var __observer;\n" +
 		   "if(!__observer) {\n" +
 		   "  __observer = (function(global) {\n" +
 		        include('Observer') +

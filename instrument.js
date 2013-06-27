@@ -32,7 +32,6 @@ function instrument(file, load, test, cb) {
 		var htmlTmp = temp.openSync({ suffix: '.html' });
 		fs.writeSync(htmlTmp.fd,
 					"<html><head>\n" +
-					"<script src='file://" + __dirname + "/node_modules/escodegen/escodegen.browser.js'></script>\n" +
 					"<script>\n" + instrumented_src + "\n" + "</script>\n" +
 					"</head><body></body>\n" +
 					(test ? "<script>\n" + fs.readFileSync(test, 'utf-8') + "</script>\n" : "") +
