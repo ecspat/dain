@@ -9,8 +9,10 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global HiddenClass add*/
+/*global HiddenClass add mkOr */
 
+/** A UnionClass represents an alternative of several hidden classes. We keep the member
+ * classes sorted by ID to ensure canonicity. */
 function UnionClass() {
 	HiddenClass.call(this);
 		
@@ -31,3 +33,40 @@ UnionClass.prototype.setPropClass = function(prop, klass) {
 		member.setPropClass(prop, klass);
 	});
 };
+
+UnionClass.prototype.generate_asg = function(decls) {
+	if(this.asg)
+		return this.asg;
+
+	if(this.members.length === 1) {
+		this.asg = this.members[0].generate_asg(decls);
+	} else {
+		var n = this.members.length;
+		this.asg = mkOr(this.members[0].generate_asg(decls), this.members[1].generate_asg(decls));
+		for(var i=2;i<n;++i) {
+			this.asg = mkOr(this.asg, this.members[i].generate_asg(decls));
+		}
+	}
+	
+	this.asg.temp_name = "tmp_" + this.id;
+
+    return this.asg;
+};
+
+UnionClass.prototype.unionWith = function(that) {
+	if(that instanceof UnionClass) {
+		var res = this;
+		that.members.forEach(function(member) {
+			res = res.unionWith(member);
+		});
+		return res;
+	} else {
+		for(var i=0;i<this.members.length;++i) {
+			if(this.members[i].id === that.id)
+				return this;
+		}
+		this.members[i] = that;
+		return this;
+	}
+};
+	

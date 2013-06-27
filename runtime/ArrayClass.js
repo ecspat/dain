@@ -11,6 +11,9 @@
 
 /*global HiddenClass*/
 
+/**
+ * An ArrayClass represents all instances of a given source-level array literal.
+ */
 function ArrayClass(ary, line, offset) {
 	HiddenClass.call(this);
 	this.ary = ary;
@@ -35,3 +38,26 @@ ArrayClass.make = function(ary, line, offset) {
 ArrayClass.prototype.mkTempName = function() {
 	return this.line === -1 || this.offset === -1 ? "arraylit_" + this.id : "arraylit_" + this.line + "_" + this.offset;
 };
+
+// TODO: this ignores non-numeric properties
+ArrayClass.prototype.generate_asg = function(decls) {
+	if(this.asg)
+		return this.asg;
+		
+	var elts = [];
+	this.asg = { type: 'ArrayExpression',
+				 elements: elts,
+				 temp_name: this.mkTempName() };
+				 
+	for(var p in this.properties) {
+		if(p.substring(0, 2) === '$$') {
+			var idx = Number(p.substring(2));
+			if(idx >= 0) {
+				elts[idx] = this.properties[p].generate_asg(decls);
+			}
+		}
+	}
+	
+	return this.asg;
+};
+	

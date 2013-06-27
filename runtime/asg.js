@@ -9,105 +9,15 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global Observer getHiddenClass isIdentifier hasHiddenClass tagMember global mkAssignStmt escodegen add console mkIdentifier mkCallStmt mkMemberExpression */
+/*global add mkDecl mkIdentifier console*/
 
-Observer.prototype.beforeMemberWrite = function(pos, obj, prop, val) {
-	var obj_klass = getHiddenClass(obj);
-	tagMember(obj_klass, prop, val);
-};
-
-Observer.prototype.atFunctionReturn = function(pos, fn, ret) {
-	// returning 'undefined' isn't interesting, forget about it
-	if (ret === void(0))
-		return;
-
-	var fn_klass = getHiddenClass(fn),
-		val_klass = getHiddenClass(ret);
-	fn_klass.setPropClass('return', val_klass);
-};
-
-
-Observer.prototype.done = function() {
-	var decls = [], globals = [];
-	var global_class = getHiddenClass(global);
-	
-	// create definitions for all global variables
-	for (var p in global_class.properties) {
-		var prop = p.substring(2);
-		globals.push(prop);
-		decls.push(mkAssignStmt(mkIdentifier(prop), global_class.properties[p].generate_asg(decls)));
-	}
-	
-	// create calls for all observed callback invocations
-	for(var i=0,n=global_class.calls.length;i<n;++i) {
-		var call = global_class.calls[i],
-			callee = call.callee.generate_asg(decls),
-			args = call.args.map(function(arg) { return arg.generate_asg(decls); });
-		
-		if(call.kind === 'function') {
-			decls.push(mkCallStmt(callee, args));
-		} else if(call.kind === 'method') {
-			callee = mkMemberExpression(callee, 'call');
-			args.unshift(call.recv.generate_asg(decls));
-			decls.push(mkCallStmt(callee, args));
-		} else if(call.kind === 'new') {
-			decls.push(mkCallStmt(callee, args, true));
-		}
-	}
-
-	// untangle declarations
-	unfold_asgs(decls);
-	decls = sort_decls(decls);
-	
-	// wrap everything into a module
-	var prog = {
-		type: 'Program',
-		body: [{
-			type: 'VariableDeclaration',
-			declarations: globals.map(function(global) {
-				return {
-					type: 'VariableDeclarator',
-					id: mkIdentifier(global),
-					init: null
-				};
-			}),
-			kind: 'var'
-		},
-		mkCallStmt({
-			type: 'FunctionExpression',
-			id: null,
-			params: [],
-			defaults: [],
-			body: {
-				type: 'BlockStatement',
-				body: decls
-			},
-			rest: null,
-			generator: false,
-			expression: false
-		}, [])]
-	};
-	
-	// and return it
-	return escodegen.generate(prog);
-};
-
-function mkDecl(name, value) {
-	return {
-		type: 'VariableDeclaration',
-		declarations: [
-			{
-				type: 'VariableDeclarator',
-				id: {
-					type: 'Identifier',
-					name: name
-				},
-				init: value
-			}
-		],
-		kind: 'var'
-	};
-}
+/**
+ * Our model is at first represented as an ASG (abstract syntax graph), i.e., an AST where
+ * some subtrees occur in more than one place.
+ *
+ * The functions in this module can be used to unfold an ASG into a proper AST, with multiply
+ * occurring subtrees hoisted into global declarations.
+ */
 
 function unfold_asgs(decls) {
 	function recordDependency(root1, root2) {
@@ -120,17 +30,20 @@ function unfold_asgs(decls) {
 		// check whether this node has already been promoted to a declaration
 		if(nd.global_decl) {
 			recordDependency(root, nd.global_decl);
-			parent[child_idx] = { type: 'Identifier', name: nd.global_decl.declarations[0].id.name };
+			parent[child_idx] = mkIdentifier(nd.global_decl.declarations[0].id.name);
 		// otherwise check whether it needs to be promoted
 		} else if(nd.parent) {
 			decls.push(nd.global_decl = mkDecl(nd.temp_name, nd));
 			unfold(nd, nd.parent, nd.child_idx, nd.root);
 			unfold(nd, parent, child_idx, root);
+		// OK, first time we visit this node
 		} else {
+			// record parent and child index in case we encounter this node again
 			nd.parent = parent;
 			nd.child_idx = child_idx;
 			nd.root = root;
 			
+			// handle children
 			switch(nd.type) {
 			case 'AssignmentExpression':
 			case 'LogicalExpression':
@@ -199,22 +112,24 @@ function unfold_asgs(decls) {
 		unfold(decls[i], decls, i, decls[i]);
 }
 
+// perform topsort of given declarations so that references come after declarations
 function sort_decls(decls) {
 	var res = [];
 	
 	function visit(root) {
 		var deps = root.deps || [];
 		root.visited = i;
-		
-		for(var j=0,n=deps.length;j<n;++j) {
-			if(deps[j].visited == i) {
-				if(deps[j] !== root)
+
+		for (var j = 0, n = deps.length; j < n; ++j) {
+			if (deps[j].visited == i) {
+				if (deps[j] !== root && typeof console.warn === 'function') {
 					console.warn("circular dependency");
-			} else if(typeof deps[j].visited === 'undefined') {
+				}
+			} else if (typeof deps[j].visited === 'undefined') {
 				visit(deps[j]);
 			}
 		}
-		
+
 		res.push(root);
 	}
 	

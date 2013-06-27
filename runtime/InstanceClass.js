@@ -11,6 +11,8 @@
 
 /*global HiddenClass setHiddenProp*/
 
+/** An InstanceClass represents all objects created as instances of a function belonging
+ * to fnclass. */
 function InstanceClass(fnclass) {
 	HiddenClass.call(this);
 	this.fnclass = fnclass;
@@ -27,3 +29,16 @@ InstanceClass.from = function(fn) {
 InstanceClass.prototype.mkTempName = function() {
 	return "new_" + this.fnclass.mkTempName();
 };
+
+InstanceClass.prototype.generate_asg = function(decls) {
+	if(this.asg)
+		return this.asg;
+		
+	this.asg = { type: 'NewExpression',
+				 callee: this.fnclass.generate_asg(decls),
+				 'arguments': [],
+				 temp_name: this.mkTempName() };
+	
+    return this.asg;
+};
+

@@ -32,3 +32,8 @@ function array_eq(a, b) {
 			return false;
 	return true;
 }
+
+// rough check whether a given string is a valid identifier
+function isIdentifier(str) {
+	return str.match(/^[a-zA-Z_$][0-9a-zA-Z_$]*$/);
+}

@@ -9,8 +9,9 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global HiddenClass*/
+/*global HiddenClass mkThis mkIdentifier mkDecl */
 
+/** Class representing the global object. */
 function GlobalClass(global) {
     HiddenClass.call(this);
     this.obj = global;
@@ -20,4 +21,12 @@ GlobalClass.prototype = Object.create(HiddenClass.prototype);
 
 GlobalClass.prototype.mkTempName = function() {
     return "global_" + this.id;
+};
+
+GlobalClass.prototype.generate_asg = function(decls) {
+    if(!this.name) {
+		this.name = this.mkTempName();
+		decls.push(mkDecl(this.name, mkThis()));
+    }
+	return mkIdentifier(this.name);
 };

@@ -9,8 +9,9 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global HiddenClass*/
+/*global HiddenClass mkProperty */
 
+/** An ObjClass represents all objects arising from a textual object literal. */
 function ObjClass(obj, line, offset) {
 	HiddenClass.call(this);
 	this.obj = obj;
@@ -35,3 +36,21 @@ ObjClass.make = function(obj, line, offset) {
 ObjClass.prototype.mkTempName = function() {
 	return this.line === -1 || this.offset === -1 ? "objlit_" + this.id : "objlit_" + this.line + "_" + this.offset;
 };
+
+ObjClass.prototype.generate_asg = function(decls) {
+	if(this.asg)
+		return this.asg;
+		
+	var props = [];
+	this.asg = { type: 'ObjectExpression',
+				 properties: props,
+				 temp_name: this.mkTempName() };
+		
+	for(var p in this.properties)
+		if(p.substring(0, 2) === '$$') {
+			props.push(mkProperty(p.substring(2), this.properties[p].generate_asg(decls)));
+		}
+
+	return this.asg;
+};
+

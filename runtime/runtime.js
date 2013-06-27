@@ -17,6 +17,7 @@ function include(mod) {
 	return fs.readFileSync(__dirname + '/' + mod + '.js', 'utf-8');
 }
 
+// generate source of our runtime library
 exports.getRuntimeSource = function() {
 	return fs.readFileSync(__dirname + '/../node_modules/escodegen/escodegen.browser.js', 'utf-8') +
 		   "var __observer;\n" +
@@ -24,6 +25,8 @@ exports.getRuntimeSource = function() {
 		   "  __observer = (function(global) {\n" +
 		        include('Observer') +
                 include('util') +
+                include('ast') +
+                include('asg') +
                 include('HiddenClass') +
                 include('FunctionClass') +
                 include('ClientObjClass') +
@@ -33,11 +36,7 @@ exports.getRuntimeSource = function() {
                 include('PrimitiveClass') +
                 include('UnionClass') +
                 include('GlobalClass') +
-                include('union') +
-                include('pp') +
                 include('tagging') +
-                include('reachability') +
-                include('api') +
            "    tagGlobal(global);\n" +
            "    return new Observer();\n" +
 		   "  })(this);\n" +

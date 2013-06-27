@@ -9,9 +9,10 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
  
- /*global HiddenClass*/
+ /*global HiddenClass mkIdentifier*/
 
-/** a class representing a client object passed in as a function argument */
+/** This class represents all client objects (including functions) passed as parameter 'i' to
+ * function 'fn'. */
 function ClientObjClass(fn, i) {
 	HiddenClass.call(this);
 	this.fn = fn;
@@ -26,3 +27,31 @@ ClientObjClass.make = function(fn, i) {
 ClientObjClass.prototype.mkTempName = function() {
 	return this.fn.mkTempName() + "_" + this.index;
 };
+
+ClientObjClass.prototype.generate_asg = function(decls) {
+	if (this.asg)
+		return mkIdentifier(this.asg.name);
+
+	var tmp_name = this.mkTempName();
+	this.asg = mkIdentifier(tmp_name);
+	
+	// generate declaration for global variable to hold this client object
+	if (!decls[0] || decls[0].type !== 'VariableDeclaration') {
+		decls.unshift({
+			type: 'VariableDeclaration',
+			declarations: [],
+			kind: 'var'
+		});
+	}
+	decls[0].declarations.push({
+		type: 'VariableDeclarator',
+		id: mkIdentifier(tmp_name),
+		init: null
+	});
+	
+	// notify function that parameter was used
+	this.fn.parameterUsed(this.index);
+	
+	return this.asg;
+};
+
