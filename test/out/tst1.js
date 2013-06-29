@@ -1,15 +1,15 @@
 var A, a;
 (function () {
     var $NUMBER$ = Math.random();
-    var function_16 = function () {
+    var function_7 = function () {
         this.x = $NUMBER$;
         this['*'] = String($NUMBER$);
     };
-    function_16.prototype = {
+    function_7.prototype = {
         m: function () {
         }
     };
-    function_16.z = { '*': $NUMBER$ };
-    A = function_16;
-    a = new function_16();
+    function_7.z = { '*': $NUMBER$ };
+    A = function_7;
+    a = new function_7();
 }());

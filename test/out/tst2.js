@@ -1,8 +1,8 @@
 var f;
 (function() {
-	var global_8 = this ;
+	var global_6 = this ;
 	f = function() {
-		return global_8;
+		return global_6;
 	};
 })();
 

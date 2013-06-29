@@ -28,16 +28,7 @@ function Union(members) {
 		}
 	});
 }
-
-Union.cache = {};
-
-Union.signature = function(members) {
-	var ids = [];
-	members.forEach(function(member) {
-		add(ids, member.id);
-	});
-	return ids.sort().join(',');
-};
+Union.prototype = Object.create(Model.prototype);
 
 Union.make = function(members) {
 	if(members.length === 0)
@@ -57,14 +48,6 @@ Union.make = function(members) {
 		}
 	});
 		
-	/*var sig = Union.signature(members),
-	    model = Union.cache[sig];
-	
-	if(!model) {
-		Union.cache[sig] = model = new Union(members);
-	}
-	
-	return model;*/
 	return new Union(flattened_members);
 };
 

@@ -12,34 +12,14 @@
 /*global require exports*/
 
 var ObjModel = require('./ObjModel').ObjModel,
+    InstanceModel = require('./InstanceModel').InstanceModel,
     UNDEFINED = require('./PrimitiveModel').UNDEFINED;
  
-function FunctionModel(property_models, instance_model, return_model) {
-	ObjModel.call(this, property_models);
-	this.instance_model = instance_model;
-	this.return_model = return_model;
-	this.used_params = [];
+function FunctionModel() {
+	ObjModel.call(this);
+	this.instance_model = new InstanceModel(this);
+	this.return_model = UNDEFINED;
 }
 FunctionModel.prototype = Object.create(ObjModel.prototype);
-
-FunctionModel.cache = {};
-
-FunctionModel.signature = function(property_models, instance_model, return_model) {
-	return ObjModel.signature(property_models) + "|" + instance_model.id + ":" + return_model.id;
-};
-
-FunctionModel.make = function(property_models, instance_model, return_model) {
-	/*var sig = FunctionModel.signature(property_models, instance_model, return_model),
-	    model = FunctionModel.cache[sig];
-	
-	if(!model) {
-		FunctionModel.cache[sig] = model = new FunctionModel(property_models, instance_model, return_model);
-	}
-	
-	return model;*/
-	return new FunctionModel(property_models, instance_model, return_model);
-};
-
-FunctionModel.EMPTY = FunctionModel.make({}, ObjModel.EMPTY, UNDEFINED);
 
 exports.FunctionModel = FunctionModel;

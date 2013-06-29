@@ -14,6 +14,9 @@
  var ObjModel = require('./ObjModel').ObjModel;
 
 function GlobalModel(property_models) {
+	if(GlobalModel.GLOBAL)
+		throw new Error("Cannot have more than one global model.");
+	GlobalModel.GLOBAL = this;
 	ObjModel.call(this, property_models);
 }
 GlobalModel.prototype = Object.create(ObjModel.prototype);

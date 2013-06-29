@@ -101,7 +101,7 @@ GlobalModel.prototype.generate_asg = function(decls) {
 };
 
 InstanceModel.prototype.generate_asg = function(decls) {
-	var fn_asg = getModel(this.fn).generate_asg(decls);
+	var fn_asg = this.fn_model.generate_asg(decls);
 	return {
 		type: 'NewExpression',
 		callee: fn_asg,

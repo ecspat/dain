@@ -19,6 +19,7 @@ function ObjModel(property_models) {
 	Model.call(this);
 	this.property_models = property_models || {};
 }
+ObjModel.prototype = Object.create(Model.prototype);
 
 ObjModel.prototype.addPropertyModels = function(property_models) {
 	var self = this;
@@ -30,27 +31,5 @@ ObjModel.prototype.addPropertyModels = function(property_models) {
 		}
 	});
 };
-
-ObjModel.cache = {};
-
-ObjModel.signature = function(property_models) {
-	return Object.keys(property_models).sort().map(function(p) {
-		return p.substring(2) + ":" + property_models[p].id;
-	}).join(',');
-};
-
-ObjModel.make = function(property_models) {
-	/*var sig = ObjModel.signature(property_models),
-	    model = ObjModel.cache[sig];
-	
-	if(!model) {
-		ObjModel.cache[sig] = model = new ObjModel(property_models);
-	}
-	
-	return model;*/
-	return new ObjModel(property_models);
-};
-
-ObjModel.EMPTY = ObjModel.make({});
 
 exports.ObjModel = ObjModel;

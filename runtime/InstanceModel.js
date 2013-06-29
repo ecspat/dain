@@ -13,9 +13,9 @@
 
 var ObjModel = require('./ObjModel').ObjModel;
 
-function InstanceModel(fn, property_models) {
-	ObjModel.call(this, property_models);
-	this.fn = fn;
+function InstanceModel(fn_model) {
+	ObjModel.call(this);
+	this.fn_model = fn_model;
 }
 InstanceModel.prototype = Object.create(ObjModel.prototype);
 

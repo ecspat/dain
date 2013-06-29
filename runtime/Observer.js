@@ -26,6 +26,9 @@
      mkMemberExpression = ast.mkMemberExpression,
      mkCallStmt = ast.mkCallStmt,
      getModel = models.getModel;
+     
+require('./circularity');
+require('./hashconsing');
 
 /** The observer is notified by the dynamic instrumentation framework of events happening in the instrumented program. */
 function Observer(global) {
@@ -172,10 +175,14 @@ Observer.prototype.beforeCall = function(pos, recv, callee, args, kind) {
 Observer.prototype.done = function() {
 	var decls = [], globals = [];
 	
-	getModel(this.global);
+	// recursively compute models for all objects reachable from the global one
+	var global_model = getModel(this.global);
+	
+	// hashcons non-circular models
+	global_model.checkCircularity();
+	global_model.hashcons();
 	
 	// create definitions for all global variables
-	var global_model = getModel(this.global);
 	for (var p in global_model.property_models) {
 		var prop = p.substring(2);
 		globals.push(prop);

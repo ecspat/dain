@@ -29,22 +29,6 @@ var util = require('./util'),
     getOrCreateHiddenProp = util.getOrCreateHiddenProp,
     setHiddenProp = util.setHiddenProp;
 
-function merge(prop_maps) {
-	var res = {};
-	prop_maps.forEach(function(prop_map) {
-		forEach(prop_map, function(k, v) {
-			if(!(k in res)) {
-				res[k] = [v];
-			} else {
-				add(res[k], v);
-			}
-		});
-	});
-	return forEach(res, function(k, vs) {
-		return Union.make(vs);
-	});
-}
-
 function getModel(obj) {
 	var tp = typeof obj, property_models;
 	switch(typeof obj) {
@@ -82,20 +66,21 @@ function getModel(obj) {
 		return obj.__model;
 	case 'function':
 		if(!obj.hasOwnProperty('__model')) {
-			setHiddenProp(obj, '__model', FunctionModel.EMPTY);
+			setHiddenProp(obj, '__model', new FunctionModel());
 			
 			property_models = forEach(getOrCreateHiddenProp(obj, '__properties', {}), function(prop, vals) {
 				return Union.make(vals.map(getModel));
 			});
-			var instance_properties = merge(getOrCreateHiddenProp(obj, '__instances', []).map(function(inst) { 
-				return forEach(getOrCreateHiddenProp(inst, '__properties', {}), function(prop, vals) {
+			obj.__model.addPropertyModels(property_models);
+			
+			getOrCreateHiddenProp(obj, '__instances', []).forEach(function(inst) { 
+				var instance_property_models = forEach(getOrCreateHiddenProp(inst, '__properties', {}), function(prop, vals) {
 					return Union.make(vals.map(getModel));
 				});
-			}));
-			var instance_model = new InstanceModel(obj, instance_properties);
-			var return_model = Union.make(getOrCreateHiddenProp(obj, '__return', []).map(getModel));
+				obj.__model.instance_model.addPropertyModels(instance_property_models);
+			});
 			
-			setHiddenProp(obj, '__model', FunctionModel.make(property_models, instance_model, return_model));
+			obj.__model.return_model = Union.make(getOrCreateHiddenProp(obj, '__return', []).map(getModel));
 		}
 		return obj.__model;
 	}
