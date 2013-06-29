@@ -11,14 +11,19 @@
  
  /*global require exports */
  
- var ObjModel = require('./ObjModel').ObjModel;
+ var Model = require('./Model').Model,
+     ObjModel = require('./ObjModel').ObjModel,
+     isIdentifier = require('./util').isIdentifier;
 
-function GlobalModel() {
-	if(GlobalModel.GLOBAL)
-		throw new Error("Cannot have more than one global model.");
-	GlobalModel.GLOBAL = this;
-	ObjModel.call(this);
+function ArrayModel(property_models) {
+	Model.call(this);
+	this.property_models = {};
 }
-GlobalModel.prototype = Object.create(ObjModel.prototype);
+ArrayModel.prototype = Object.create(ObjModel.prototype);
 
-exports.GlobalModel = GlobalModel;
+ArrayModel.prototype.normalisePropName = function(prop) {
+	// merge non-identifier, non-index properties
+	return isIdentifier(prop) || Number(prop) >= 0 ? prop : '*';
+};
+
+exports.ArrayModel = ArrayModel;

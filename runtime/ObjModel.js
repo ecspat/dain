@@ -13,23 +13,31 @@
  
  var Model = require('./Model').Model,
      Union = require('./Union').Union,
-     forEach = require('./util').forEach;
+     util = require('./util'),
+     forEach = util.forEach,
+     isIdentifier = util.isIdentifier;
 
-function ObjModel(property_models) {
+function ObjModel() {
 	Model.call(this);
-	this.property_models = property_models || {};
+	this.property_models = {};
 }
 ObjModel.prototype = Object.create(Model.prototype);
 
 ObjModel.prototype.addPropertyModels = function(property_models) {
 	var self = this;
 	forEach(property_models, function(prop, model) {
+		prop = '$$' + self.normalisePropName(prop.substring(2));
 		if(prop in self.property_models) {
-			self.property_models[prop] = Union.make(self.property_models[prop], model);
+			self.property_models[prop] = Union.make([self.property_models[prop], model]);
 		} else {
 			self.property_models[prop] = model;
 		}
 	});
+};
+
+ObjModel.prototype.normalisePropName = function(prop) {
+	// merge non-identifier properties
+	return isIdentifier(prop) ? prop : '*';
 };
 
 exports.ObjModel = ObjModel;

@@ -20,7 +20,6 @@
      isObject = util.isObject,
      getOrCreateHiddenProp = util.getOrCreateHiddenProp,
      setHiddenProp = util.setHiddenProp,
-     isIdentifier = util.isIdentifier,
      mkAssignStmt = ast.mkAssignStmt,
      mkIdentifier = ast.mkIdentifier,
      mkMemberExpression = ast.mkMemberExpression,
@@ -42,8 +41,6 @@ Observer.prototype.atFunctionExit = function(){};
 
 function getPropertyCache(obj, prop) {
 	var prop_caches = getOrCreateHiddenProp(obj, '__properties', {});
-	if(!isIdentifier(prop))
-		prop = '*';
 	return prop_caches['$$' + prop] || (prop_caches['$$' + prop] = []);
 }
 
@@ -53,7 +50,7 @@ function getParameterCache(fn, i) {
 }
 
 function hasOrigin(obj) {
-	return obj.hasOwnProperty(obj);
+	return obj.hasOwnProperty('__origin');
 }
 
 function setOrigin(obj, pos, type, data) {

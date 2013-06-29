@@ -14,6 +14,7 @@
 var util = require('./util'),
     Union = require('./Union').Union,
     ObjModel = require('./ObjModel').ObjModel,
+    ArrayModel = require('./ArrayModel').ArrayModel,
     GlobalModel = require('./GlobalModel').GlobalModel,
     InstanceModel = require('./InstanceModel').InstanceModel,
     FunctionModel = require('./FunctionModel').FunctionModel,
@@ -56,7 +57,7 @@ function getModel(obj) {
 			} else if(type === 'instance') {
 				setHiddenProp(obj, '__model', getModel(obj.__origin.data).instance_model);
 			} else {
-				setHiddenProp(obj, '__model', new ObjModel());
+				setHiddenProp(obj, '__model', type === 'arraylit' ? new ArrayModel() : new ObjModel());
 				property_models = forEach(getOrCreateHiddenProp(obj, '__properties', {}), function(prop, vals) {
 					return Union.make(vals.map(getModel));
 				});

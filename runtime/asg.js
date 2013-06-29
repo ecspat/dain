@@ -16,6 +16,7 @@ var add = require('./util').add,
 	PrimitiveModel = require('./PrimitiveModel'),
 	InstanceModel = require('./InstanceModel').InstanceModel,
 	ObjModel = require('./ObjModel').ObjModel,
+	ArrayModel = require('./ArrayModel').ArrayModel,
 	Union = require('./Union').Union,
 	UNDEFINED = PrimitiveModel.UNDEFINED,
 	NULL = PrimitiveModel.NULL,
@@ -111,7 +112,7 @@ InstanceModel.prototype.generate_asg = function(decls) {
 };
 
 ObjModel.prototype.generate_asg = function(decls) {
-	if (this.asg) return this.asg;
+	if (this.asg) { return this.asg; }
 
 	var props = [];
 	this.asg = {
@@ -126,6 +127,34 @@ ObjModel.prototype.generate_asg = function(decls) {
 		}
 	}
 
+	return this.asg;
+};
+
+ArrayModel.prototype.generate_asg = function(decls) {
+	if(this.asg) {
+		return this.asg;
+	}
+	
+	var elements = [];
+	this.asg = {
+		type: 'ArrayExpression',
+		elements: elements,
+		temp_name: 'array' + this.id
+	};
+
+	for(var p in this.property_models) {
+		if(p.substring(0, 2) === '$$') {
+			var pn = p.substring(2);
+			if(Number(pn) >= 0) {
+				elements[Number(pn)] = this.property_models[p].generate_asg(decls);
+			} else {
+				// found a non-index property, so just treat the whole thing as an object
+				delete this.asg;
+				return ObjModel.prototype.generate_asg.call(this, decls);
+			}
+		}
+	}
+	
 	return this.asg;
 };
 
@@ -294,7 +323,6 @@ function unfold_asgs(decls) {
 				}
 				break;
 			default:
-				debugger;
 				throw new Error("no idea how to handle " + nd.type);
 			}
 		}

@@ -15,6 +15,7 @@
 
 var PrimitiveModel = require('./PrimitiveModel').PrimitiveModel,
     GlobalModel = require('./GlobalModel').GlobalModel,
+    ArrayModel = require('./ArrayModel').ArrayModel,
     ObjModel = require('./ObjModel').ObjModel,
     FunctionModel = require('./FunctionModel').FunctionModel,
     InstanceModel = require('./InstanceModel').InstanceModel,
@@ -54,6 +55,13 @@ ObjModel.prototype.hashcons = function() {
 		var sig = this.signature();
 		return ObjModel.cache[sig] || (ObjModel.cache[sig] = this);
 	}
+};
+
+// array models work basically the same as object models, but we give them a slightly
+// different signature to make sure we don't gratuitously merge them
+
+ArrayModel.prototype.signature = function() {
+	return "[" + ObjModel.prototype.signature.call(this);
 };
 
 // ditto for function models
