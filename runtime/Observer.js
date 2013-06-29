@@ -28,6 +28,7 @@
      
 require('./circularity');
 require('./hashconsing');
+require('./find_used_client_objects');
 
 /** The observer is notified by the dynamic instrumentation framework of events happening in the instrumented program. */
 function Observer(global) {
@@ -163,7 +164,7 @@ Observer.prototype.beforeCall = function(pos, recv, callee, args, kind) {
 		
 		// record invocation of client callback
 		if(getOrigin(callee).type === 'client object') {
-			add(getOrCreateHiddenProp(this.global, '__callbacks', []), callee);
+			add(getOrCreateHiddenProp(this.global, '__callbacks', []), { callee: callee, kind: kind });
 		}
 	}
 };
@@ -179,6 +180,8 @@ Observer.prototype.done = function() {
 	global_model.checkCircularity();
 	global_model.hashcons();
 	
+	global_model.findUsedClientObjects();
+	
 	// create definitions for all global variables
 	for (var p in global_model.property_models) {
 		var prop = p.substring(2);
@@ -187,20 +190,19 @@ Observer.prototype.done = function() {
 	}
 	
 	// create calls for all observed callback invocations
-	var callees = getOrCreateHiddenProp(this.global, '__callbacks', []);
-	for(var i=0,n=callees.length;i<n;++i) {
-		var callee = callees[i],
-		    parms = getOrCreateHiddenProp(callee, '__parameters', []),
-		    parm_models = parms.map(getModel);
-		    
-		 if(parms[0]) {
-			decls.push(mkCallStmt(getModel(callee).generate_asg(decls),
-								  parm_models.slice(1).map(function(parm) { return parm.generate_asg(decls); })));
-		 } else {
-			decls.push(mkCallStmt(mkMemberExpression(getModel(callee).generate_asg(decls), 'call'),
-								  parm_models.map(function(parm) { return parm.generate_asg(decls); })));
-		 }
-	}
+	global_model.callbacks.forEach(function(callback) {
+		var callee = callback.callee,
+			args = callback.args;
+			
+		if(!args[0]) {
+			decls.push(mkCallStmt(callee.generate_asg(decls),
+								  args.slice(1).map(function(arg) { return arg.generate_asg(decls); }),
+								  callback.kind === 'new'));
+		} else {
+			decls.push(mkCallStmt(mkMemberExpression(callee.generate_asg(decls), 'call'),
+								  args.map(function(arg) { return arg.generate_asg(decls); })));
+		}
+	});
 
 	// untangle declarations
 	asg.unfold_asgs(decls);

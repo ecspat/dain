@@ -51,4 +51,8 @@ Union.make = function(members) {
 	return new Union(flattened_members);
 };
 
+Union.prototype.getChildren = function() {
+	return this.members;
+};
+
 exports.Union = Union;

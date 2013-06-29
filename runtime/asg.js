@@ -17,6 +17,7 @@ var add = require('./util').add,
 	InstanceModel = require('./InstanceModel').InstanceModel,
 	ObjModel = require('./ObjModel').ObjModel,
 	ArrayModel = require('./ArrayModel').ArrayModel,
+	ClientObjModel = require('./ClientObjModel').ClientObjModel,
 	Union = require('./Union').Union,
 	UNDEFINED = PrimitiveModel.UNDEFINED,
 	NULL = PrimitiveModel.NULL,
@@ -63,6 +64,15 @@ FunctionModel.prototype.generate_asg = function(decls) {
 		expression: false,
 		temp_name: "function_" + this.id
 	};
+	
+	// handle used parameters
+	for(var i=0,n=this.used_params.length;i<n;++i) {
+		params.push(mkIdentifier('x' + i));
+		if(i in this.used_params) {
+			body.push(mkAssignStmt(mkIdentifier('function_' + this.id + '_' + i),
+								   mkIdentifier('x' + i)));
+		}
+	}
 
 	// handle function properties
 	for (var p in this.property_models) {
@@ -228,6 +238,27 @@ Union.prototype.generate_asg = function(decls) {
 	}
 
     return this.asg;
+};
+
+ClientObjModel.prototype.generate_asg = function(decls) {
+	if(this.asg)
+		return mkIdentifier(this.asg);
+		
+	this.asg = "function_" + this.fn_model.id + "_" + this.idx;
+	if(!decls[0] || decls[0].type !== 'VariableDeclaration') {
+		decls.unshift({
+			type: 'VariableDeclaration',
+			kind: 'var',
+			declarations: []
+		});
+	}
+	decls[0].declarations.push({
+		type: 'VariableDeclarator',
+		id: mkIdentifier(this.asg),
+		init: null
+	});
+	
+	return mkIdentifier(this.asg);
 };
 
 /** Function for unfolding a list of ASGs into a list of ASTs, with multiply

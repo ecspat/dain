@@ -11,18 +11,17 @@
  
  /*global require exports */
  
- var Model = require('./Model').Model;
+ var ObjModel = require('./ObjModel').ObjModel;
 
-function PrimitiveModel() {
-	Model.call(this);
+function ClientObjModel(fn_model, idx) {
+	ObjModel.call(this);
+	this.fn_model = fn_model;
+	this.idx = idx;
 }
-PrimitiveModel.prototype = Object.create(Model.prototype);
+ClientObjModel.prototype = Object.create(ObjModel.prototype);
 
-var UNDEFINED = exports.UNDEFINED = new PrimitiveModel(),
-    NULL = exports.NULL = new PrimitiveModel(),
-    NUMBER = exports.NUMBER = new PrimitiveModel(),
-	BOOLEAN = exports.BOOLEAN = new PrimitiveModel(),
-	STRING = exports.STRING = new PrimitiveModel(),
-	REGEXP = exports.REGEXP = new PrimitiveModel();
-	
-exports.PrimitiveModel = PrimitiveModel;
+ClientObjModel.prototype.getChildren = function() {
+	return [];
+};
+
+exports.ClientObjModel = ClientObjModel;

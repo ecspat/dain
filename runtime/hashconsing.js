@@ -13,24 +13,19 @@
 
 /** Methods for hashconsing models that are not circular. */
 
-var PrimitiveModel = require('./PrimitiveModel').PrimitiveModel,
-    GlobalModel = require('./GlobalModel').GlobalModel,
+var Model = require('./Model').Model,
     ArrayModel = require('./ArrayModel').ArrayModel,
     ObjModel = require('./ObjModel').ObjModel,
+    GlobalModel = require('./GlobalModel').GlobalModel,
     FunctionModel = require('./FunctionModel').FunctionModel,
-    InstanceModel = require('./InstanceModel').InstanceModel,
     Union = require('./Union').Union,
     util = require('./util'),
     forEach = util.forEach,
-    add = util.add;
-
-// primitives are already hashconsed
-PrimitiveModel.prototype.hashcons = function() {
-	return this;
-};
-
-// ditto for global model
-GlobalModel.prototype.hashcons = function() {
+    add = util.add,
+    array_eq = util.array_eq;
+    
+// no hashconsing by default
+Model.prototype.hashcons = function() {
 	return this;
 };
 
@@ -80,17 +75,12 @@ FunctionModel.prototype.hashcons = function() {
 	this.instance_model = this.instance_model.hashcons();
 	this.return_model = this.return_model.hashcons();
 	
-	if(this.circular) {
+	if(this.circular || this.used_parms.length > 0) {
 		return this;
 	} else {
 		var sig = this.signature();
 		return FunctionModel.cache[sig] || (FunctionModel.cache[sig] = this);
 	}	
-};
-
-// no hashconsing for instance models
-InstanceModel.prototype.hashcons = function() {
-	return this;
 };
 
 // unions are hashconsed based on their members
@@ -111,4 +101,26 @@ Union.prototype.hashcons = function(members) {
 		var sig = this.signature();
 		return Union.cache[sig] || (Union.cache[sig] = this);
 	}
+};
+
+// the global model itself isn't hashconsed, but callbacks may be
+GlobalModel.prototype.hashcons = function() {
+	var callbacks = [];
+	this.callbacks.forEach(function(callback) {
+		callback.callee = callback.callee.hashcons();
+		for(var i=0,n=callback.args.length;i<n;++i) {
+			callback.args[i] = callback.args[i] && callback.args[i].hashcons();
+		}
+		
+		for(i=0,n=callbacks.length;i<n;++i) {
+			if(callbacks[i].callee === callback.callee &&
+			   array_eq(callbacks[i].args, callback.args)) {
+				return;
+			}
+		}
+		callbacks.push(callback);
+	});
+	this.callbacks = callbacks;
+	
+	return this;
 };

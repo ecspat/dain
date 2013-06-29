@@ -9,15 +9,22 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
  
- /*global require exports */
+ /*global require */
+ 
+var Model = require('./Model').Model,
+    ClientObjModel = require('./ClientObjModel').ClientObjModel;
 
-function Model() {
-	this.id = Model.next_model_id++;
-}
-Model.next_model_id = 0;
-
-Model.prototype.getChildren = function() {
-	return [];
+/* traversal function for finding client objects that are used somewhere */
+Model.prototype.findUsedClientObjects = function() {
+	if(!this.visited) {
+		this.visited = true;
+		this.getChildren().forEach(function(child) {
+			child.findUsedClientObjects();
+		});
+		delete this.visited;
+	}
 };
 
-exports.Model = Model;
+ClientObjModel.prototype.findUsedClientObjects = function() {
+	this.fn_model.used_params[this.idx] = true;
+};

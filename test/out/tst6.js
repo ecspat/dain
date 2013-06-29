@@ -1,10 +1,10 @@
 var register, invoke, cbs;
 
 (function() {
-	var function_3_15_0;
+	var function_7_0;
 	
 	register = function (x0) {
-	    function_3_15_0 = x0;
+	    function_7_0 = x0;
 	};
 	
 	invoke = function () {
@@ -12,5 +12,5 @@ var register, invoke, cbs;
 
 	cbs = [];
 
-	function_3_15_0();
+	function_7_0();
 })();

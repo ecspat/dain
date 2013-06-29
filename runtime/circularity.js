@@ -37,22 +37,3 @@ Model.prototype.checkCircularity = function() {
 
 // primitive models are leaves, they cannot possibly be circular
 PrimitiveModel.prototype.checkCircularity = function() {};
-
-FunctionModel.prototype.getChildren = function() {
-	var children = ObjModel.prototype.getChildren.call(this);
-	add(children, this.instance_model);
-	add(children, this.return_model);
-	return children;
-};
-
-ObjModel.prototype.getChildren = function() {
-	var children = [];
-	forEach(this.property_models, function(_, model) {
-		add(children, model);
-	});
-	return children;
-};
-
-Union.prototype.getChildren = function() {
-	return this.members;
-};

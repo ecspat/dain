@@ -56,7 +56,7 @@ function instrument(file, load, test, cb) {
 				}, 1000);
 			});
 		} else {
-			cb(instrumented_src);
+			cb(instrumented_src + (test ? fs.readFileSync(test, 'utf-8') : ''));
 		}
     });
 }
@@ -80,8 +80,5 @@ if (require.main === module) {
 		process.exit(-1);
 	}
 	
-	if(!r[0].load && r[1].length > 1)
-		console.warn("Ignoring test file since '-l' wasn't given.");
-
 	instrument(r[1][0], r[0].load, r[1][1], console.log);
 }

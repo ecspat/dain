@@ -15,6 +15,7 @@
      Union = require('./Union').Union,
      util = require('./util'),
      forEach = util.forEach,
+     add = util.add,
      isIdentifier = util.isIdentifier;
 
 function ObjModel() {
@@ -38,6 +39,14 @@ ObjModel.prototype.addPropertyModels = function(property_models) {
 ObjModel.prototype.normalisePropName = function(prop) {
 	// merge non-identifier properties
 	return isIdentifier(prop) ? prop : '*';
+};
+
+ObjModel.prototype.getChildren = function() {
+	var children = [];
+	forEach(this.property_models, function(_, model) {
+		add(children, model);
+	});
+	return children;
 };
 
 exports.ObjModel = ObjModel;

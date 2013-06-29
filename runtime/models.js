@@ -19,6 +19,7 @@ var util = require('./util'),
     InstanceModel = require('./InstanceModel').InstanceModel,
     FunctionModel = require('./FunctionModel').FunctionModel,
     PrimitiveModel = require('./PrimitiveModel'),
+    ClientObjModel = require('./ClientObjModel').ClientObjModel,
     UNDEFINED = PrimitiveModel.UNDEFINED,
 	NULL = PrimitiveModel.NULL,
 	BOOLEAN = PrimitiveModel.BOOLEAN,
@@ -31,7 +32,7 @@ var util = require('./util'),
     setHiddenProp = util.setHiddenProp;
 
 function getModel(obj) {
-	var tp = typeof obj, property_models;
+	var tp = typeof obj, type, property_models;
 	switch(typeof obj) {
 	case 'undefined':
 		return UNDEFINED;
@@ -47,15 +48,26 @@ function getModel(obj) {
 		} else if(obj instanceof RegExp) {
 			return REGEXP;
 		} else if (!obj.hasOwnProperty('__model')) {
-			var type = getOrCreateHiddenProp(obj, '__origin', { start_line: -1, start_offset: -1, type: 'unknown' }).type;
+			type = getOrCreateHiddenProp(obj, '__origin', { start_line: -1, start_offset: -1, type: 'unknown' }).type;
 			if(type === 'global') {
-				setHiddenProp(obj, '__model', new GlobalModel());
+				setHiddenProp(obj, '__model', new GlobalModel(obj));
 				property_models = forEach(getOrCreateHiddenProp(obj, '__properties', {}), function(prop, vals) {
 					return Union.make(vals.map(getModel));
 				});
 				obj.__model.addPropertyModels(property_models);
+				obj.__model.addCallbacks(getOrCreateHiddenProp(obj, '__callbacks', []).map(function(info) {
+					return {
+						callee: getModel(info.callee),
+						args: getOrCreateHiddenProp(info.callee, '__parameters', []).map(function(vals) {
+							return Union.make(vals.map(getModel));
+						}),
+						kind: info.kind
+					};
+				}));
 			} else if(type === 'instance') {
 				setHiddenProp(obj, '__model', getModel(obj.__origin.data).instance_model);
+			} else if(type === 'client object') {
+				setHiddenProp(obj, '__model', new ClientObjModel(getModel(obj.__origin.data.fn), obj.__origin.data.index));
 			} else {
 				setHiddenProp(obj, '__model', type === 'arraylit' ? new ArrayModel() : new ObjModel());
 				property_models = forEach(getOrCreateHiddenProp(obj, '__properties', {}), function(prop, vals) {
@@ -67,21 +79,26 @@ function getModel(obj) {
 		return obj.__model;
 	case 'function':
 		if(!obj.hasOwnProperty('__model')) {
-			setHiddenProp(obj, '__model', new FunctionModel());
+			type = getOrCreateHiddenProp(obj, '__origin', { start_line: -1, start_offset: -1, type: 'unknown' }).type;
+			if(type === 'client object') {
+				setHiddenProp(obj, '__model', new ClientObjModel(getModel(obj.__origin.data.fn), obj.__origin.data.index));
+			} else {
+				setHiddenProp(obj, '__model', new FunctionModel());
 			
-			property_models = forEach(getOrCreateHiddenProp(obj, '__properties', {}), function(prop, vals) {
-				return Union.make(vals.map(getModel));
-			});
-			obj.__model.addPropertyModels(property_models);
-			
-			getOrCreateHiddenProp(obj, '__instances', []).forEach(function(inst) { 
-				var instance_property_models = forEach(getOrCreateHiddenProp(inst, '__properties', {}), function(prop, vals) {
+				property_models = forEach(getOrCreateHiddenProp(obj, '__properties', {}), function(prop, vals) {
 					return Union.make(vals.map(getModel));
 				});
-				obj.__model.instance_model.addPropertyModels(instance_property_models);
-			});
+				obj.__model.addPropertyModels(property_models);
 			
-			obj.__model.return_model = Union.make(getOrCreateHiddenProp(obj, '__return', []).map(getModel));
+				getOrCreateHiddenProp(obj, '__instances', []).forEach(function(inst) { 
+					var instance_property_models = forEach(getOrCreateHiddenProp(inst, '__properties', {}), function(prop, vals) {
+						return Union.make(vals.map(getModel));
+					});
+					obj.__model.instance_model.addPropertyModels(instance_property_models);
+				});
+			
+				obj.__model.return_model = Union.make(getOrCreateHiddenProp(obj, '__return', []).map(getModel));
+			}
 		}
 		return obj.__model;
 	}
