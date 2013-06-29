@@ -16,6 +16,7 @@
 var Model = require('./Model').Model,
     ArrayModel = require('./ArrayModel').ArrayModel,
     ObjModel = require('./ObjModel').ObjModel,
+    ClientObjModel = require('./ClientObjModel').ClientObjModel,
     GlobalModel = require('./GlobalModel').GlobalModel,
     FunctionModel = require('./FunctionModel').FunctionModel,
     Union = require('./Union').Union,
@@ -26,6 +27,11 @@ var Model = require('./Model').Model,
     
 // no hashconsing by default
 Model.prototype.hashcons = function() {
+	return this;
+};
+
+// and in particular not for client objects
+ClientObjModel.prototype.hashcons = function() {
 	return this;
 };
 
@@ -75,7 +81,7 @@ FunctionModel.prototype.hashcons = function() {
 	this.instance_model = this.instance_model.hashcons();
 	this.return_model = this.return_model.hashcons();
 	
-	if(this.circular || this.used_parms.length > 0) {
+	if(this.circular || this.used_params.length > 0) {
 		return this;
 	} else {
 		var sig = this.signature();
@@ -105,6 +111,7 @@ Union.prototype.hashcons = function(members) {
 
 // the global model itself isn't hashconsed, but callbacks may be
 GlobalModel.prototype.hashcons = function() {
+	debugger;
 	var callbacks = [];
 	this.callbacks.forEach(function(callback) {
 		callback.callee = callback.callee.hashcons();

@@ -67,7 +67,7 @@ function getModel(obj) {
 			} else if(type === 'instance') {
 				setHiddenProp(obj, '__model', getModel(obj.__origin.data).instance_model);
 			} else if(type === 'client object') {
-				setHiddenProp(obj, '__model', new ClientObjModel(getModel(obj.__origin.data.fn), obj.__origin.data.index));
+				setHiddenProp(obj, '__model', ClientObjModel.make(getModel(obj.__origin.data.fn), obj.__origin.data.index));
 			} else {
 				setHiddenProp(obj, '__model', type === 'arraylit' ? new ArrayModel() : new ObjModel());
 				property_models = forEach(getOrCreateHiddenProp(obj, '__properties', {}), function(prop, vals) {
@@ -81,7 +81,7 @@ function getModel(obj) {
 		if(!obj.hasOwnProperty('__model')) {
 			type = getOrCreateHiddenProp(obj, '__origin', { start_line: -1, start_offset: -1, type: 'unknown' }).type;
 			if(type === 'client object') {
-				setHiddenProp(obj, '__model', new ClientObjModel(getModel(obj.__origin.data.fn), obj.__origin.data.index));
+				setHiddenProp(obj, '__model', ClientObjModel.make(getModel(obj.__origin.data.fn), obj.__origin.data.index));
 			} else {
 				setHiddenProp(obj, '__model', new FunctionModel());
 			

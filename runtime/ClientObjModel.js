@@ -20,6 +20,10 @@ function ClientObjModel(fn_model, idx) {
 }
 ClientObjModel.prototype = Object.create(ObjModel.prototype);
 
+ClientObjModel.make = function(fn_model, idx) {
+	return fn_model.client_obj_models[idx] || (fn_model.client_obj_models[idx] = new ClientObjModel(fn_model, idx));
+};
+
 ClientObjModel.prototype.getChildren = function() {
 	return [];
 };

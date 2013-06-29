@@ -21,6 +21,7 @@ function FunctionModel() {
 	this.instance_model = new InstanceModel(this);
 	this.return_model = UNDEFINED;
 	this.used_params = [];
+	this.client_obj_models = [];
 }
 FunctionModel.prototype = Object.create(ObjModel.prototype);
 
