@@ -8,22 +8,15 @@
  * Contributors:
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
+ 
+ /*global require exports */
 
-/*global require exports */
+var ObjModel = require('./ObjModel').ObjModel;
 
-/** Superclass of all hidden classes. */
-function HiddenClass() {
-	this.properties = {};
-	this.unions = [];
-	this.id = HiddenClass.nextId++;
+function InstanceModel(fn, property_models) {
+	ObjModel.call(this, property_models);
+	this.fn = fn;
 }
-HiddenClass.nextId = 0;
-	
-HiddenClass.prototype.setPropClass = function(prop, klass) {
-	if(!this.properties[prop])
-		this.properties[prop] = klass;
-	else
-		this.properties[prop] = this.properties[prop].unionWith(klass);
-};
+InstanceModel.prototype = Object.create(ObjModel.prototype);
 
-exports.HiddenClass = HiddenClass;
+exports.InstanceModel = InstanceModel;

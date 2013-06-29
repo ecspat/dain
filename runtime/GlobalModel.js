@@ -8,11 +8,14 @@
  * Contributors:
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
+ 
+ /*global require exports */
+ 
+ var ObjModel = require('./ObjModel').ObjModel;
 
-/*global require global*/ 
-
-if(!global.__observer) {
-	var Observer = require('./Observer').Observer;
-
-	global.__observer = new Observer(global);
+function GlobalModel(property_models) {
+	ObjModel.call(this, property_models);
 }
+GlobalModel.prototype = Object.create(ObjModel.prototype);
+
+exports.GlobalModel = GlobalModel;

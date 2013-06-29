@@ -11,76 +11,191 @@
  
  /*global require exports */
  
- var ArrayClass = require('./ArrayClass').ArrayClass,
-     asg = require('./asg'),
+ var asg = require('./asg'),
      ast = require('./ast'),
-     ClientObjClass = require('./ClientObjClass').ClientObjClass,
-     GlobalClass = require('./GlobalClass').GlobalClass,
      escodegen = require('escodegen'),
-     tagging = require('./tagging'),
-     array_eq = require('./util').array_eq,
-     setHiddenClass = tagging.setHiddenClass,
-     hasHiddenClass = tagging.hasHiddenClass,
-     tagFn = tagging.tagFn,
-     tagMember = tagging.tagMember,
-     tagNew = tagging.tagNew,
-     tagObjLit = tagging.tagObjLit,
-     getHiddenClass = tagging.getHiddenClass,
+     models = require('./models'),
+     util = require('./util'),
+     add = util.add,
+     isObject = util.isObject,
+     getOrCreateHiddenProp = util.getOrCreateHiddenProp,
+     setHiddenProp = util.setHiddenProp,
+     isIdentifier = util.isIdentifier,
      mkAssignStmt = ast.mkAssignStmt,
      mkIdentifier = ast.mkIdentifier,
+     mkMemberExpression = ast.mkMemberExpression,
      mkCallStmt = ast.mkCallStmt,
-     mkMemberExpression = ast.mkMemberExpression;
+     getModel = models.getModel;
 
 /** The observer is notified by the dynamic instrumentation framework of events happening in the instrumented program. */
-function Observer() {}
+function Observer(global) {
+	this.global = global;
+	setOrigin(global, { start_line: -1, start_offset: -1 }, 'global');
+}
 
 // nothing special happens on these events
 Observer.prototype.beforeMemberRead = function(){};
 Observer.prototype.atFunctionExit = function(){};
 
-// record class of value written into member
+function getPropertyCache(obj, prop) {
+	var prop_caches = getOrCreateHiddenProp(obj, '__properties', {});
+	if(!isIdentifier(prop))
+		prop = '*';
+	return prop_caches['$$' + prop] || (prop_caches['$$' + prop] = []);
+}
+
+function getParameterCache(fn, i) {
+	var parm_caches = getOrCreateHiddenProp(fn, '__parameters', []);
+	return parm_caches[i] || (parm_caches[i] = []);
+}
+
+function hasOrigin(obj) {
+	return obj.hasOwnProperty(obj);
+}
+
+function setOrigin(obj, pos, type, data) {
+	var origin = {
+		start_line: pos.start_line,
+		start_offset: pos.start_offset,
+		type: type,
+		data: data
+	};
+	setHiddenProp(obj, '__origin', origin);
+}
+
+function getOrigin(obj) {
+	if(!hasOrigin(obj)) {
+		setOrigin(obj, { start_line: -1, start_offset: -1, type: 'unknown' });
+	}
+	return obj.__origin;
+}
+
+// record value written into property
 Observer.prototype.beforeMemberWrite = function(pos, obj, prop, val) {
-	tagMember(getHiddenClass(obj), prop, val);
+	add(getPropertyCache(obj, prop), val);
 };
 
-// record return value's class
+// record return value, unless it's undefined
 Observer.prototype.atFunctionReturn = function(pos, fn, ret) {
 	// returning 'undefined' isn't interesting, forget about it
-	if (ret === void(0))
-		return;
+	if (ret !== void(0))
+		add(getOrCreateHiddenProp(fn, '__return', []), ret);	
+};
 
-	var fn_klass = getHiddenClass(fn),
-		val_klass = getHiddenClass(ret);
-	fn_klass.setPropClass('return', val_klass);
+// tag newly created object and record its properties
+Observer.prototype.afterObjectExpression = function(pos, obj) {
+	setOrigin(obj, pos, 'objlit');
+	for(var p in obj) {
+		if(obj.hasOwnProperty(p)) {
+			var desc = Object.getOwnPropertyDescriptor(obj, p);
+			if(!desc.get && !desc.set) {
+				this.beforeMemberWrite(pos, obj, p, obj[p]);
+			}
+		}
+	}
+};
+
+// tag newly created array and record its property classes
+Observer.prototype.afterArrayExpression = function(pos, ary) {
+	setOrigin(ary, pos, 'arraylit');
+	for(var i=0,n=ary.length;i<n;++i) {
+		this.beforeMemberWrite(pos, ary, i, ary[i]);
+	}
+};
+
+// tag newly created function object and its .prototype
+Observer.prototype.afterFunctionExpression = function(pos, fn) {
+	setOrigin(fn, pos, 'function');
+	
+	var proto = fn.prototype;
+	setOrigin(proto, pos, 'default proto');
+	this.beforeMemberWrite(pos, fn, 'prototype', fn.prototype);
+	//this.beforeMemberWrite(pos, fn.prototype, 'constructor', fn);
+};
+
+// tag receiver object (if invoked via 'new'), and any client objects passed as parameters
+Observer.prototype.atFunctionEntry = function(pos, recv, args) {
+	// TODO: replace with more robust test based on tracking function calls/returns
+	if(recv instanceof args.callee) {
+		setOrigin(recv, pos, 'instance', args.callee);
+		getOrCreateHiddenProp(args.callee, '__instances', []).push(recv);
+	}
+		
+	// tag client objects when we first see them
+	for(var i=0,n=args.length;i<n;++i) {
+		if(isObject(args[i]) && !hasOrigin(args[i])) {
+			setOrigin(args[i], pos, 'client object', { fn: args.callee, index: i });
+		}
+	}
+};
+
+// simplify handling of function/method/new calls by introducing common method beforeCall
+Observer.prototype.beforeFunctionCall = function(pos, callee, args) {
+	this.beforeCall(pos, null, callee, args, 'function');
+};
+
+Observer.prototype.beforeMethodCall = function(pos, obj, prop, _, args) {
+	if(obj) {
+		var callee = obj[prop];
+		// flatten out reflective calls
+		if(callee === Function.prototype.call)
+			this.beforeCall(pos, args[0], obj, Array.prototype.slice.call(args, 1), 'method');
+		else if(callee === Function.prototype.apply)
+			this.beforeCall(pos, args[0], obj, args[1], 'method');
+		else
+			this.beforeCall(pos, obj, callee, args, 'method');
+	}
+};
+
+Observer.prototype.beforeNewExpression = function(pos, callee, args) {
+	this.beforeCall(pos, null, callee, args, 'new');
+};
+
+// record invocations of client callbacks
+Observer.prototype.beforeCall = function(pos, recv, callee, args, kind) {
+	if (typeof callee === 'function') {
+		// record receiver and arguments
+		if(recv)
+			add(getParameterCache(callee, 0), recv);
+		for(var i=0,n=args.length;i<n;++i) {
+			add(getParameterCache(callee, i+1), args[i]);
+		}
+		
+		// record invocation of client callback
+		if(getOrigin(callee).type === 'client object') {
+			add(getOrCreateHiddenProp(this.global, '__callbacks', []), callee);
+		}
+	}
 };
 
 // generate model
 Observer.prototype.done = function() {
 	var decls = [], globals = [];
-	var global_class = GlobalClass.GLOBAL;
+	
+	getModel(this.global);
 	
 	// create definitions for all global variables
-	for (var p in global_class.properties) {
+	var global_model = getModel(this.global);
+	for (var p in global_model.property_models) {
 		var prop = p.substring(2);
 		globals.push(prop);
-		decls.push(mkAssignStmt(mkIdentifier(prop), global_class.properties[p].generate_asg(decls)));
+		decls.push(mkAssignStmt(mkIdentifier(prop), global_model.property_models[p].generate_asg(decls)));
 	}
 	
 	// create calls for all observed callback invocations
-	for(var i=0,n=global_class.calls.length;i<n;++i) {
-		var call = global_class.calls[i],
-			callee = call.callee.generate_asg(decls),
-			args = call.args.map(function(arg) { return arg.generate_asg(decls); });
-		
-		if(call.kind === 'function') {
-			decls.push(mkCallStmt(callee, args));
-		} else if(call.kind === 'method') {
-			callee = mkMemberExpression(callee, 'call');
-			args.unshift(call.recv.generate_asg(decls));
-			decls.push(mkCallStmt(callee, args));
-		} else if(call.kind === 'new') {
-			decls.push(mkCallStmt(callee, args, true));
-		}
+	var callees = getOrCreateHiddenProp(this.global, '__callbacks', []);
+	for(var i=0,n=callees.length;i<n;++i) {
+		var callee = callees[i],
+		    parms = getOrCreateHiddenProp(callee, '__parameters', []),
+		    parm_models = parms.map(getModel);
+		    
+		 if(parms[0]) {
+			decls.push(mkCallStmt(getModel(callee).generate_asg(decls),
+								  parm_models.slice(1).map(function(parm) { return parm.generate_asg(decls); })));
+		 } else {
+			decls.push(mkCallStmt(mkMemberExpression(getModel(callee).generate_asg(decls), 'call'),
+								  parm_models.map(function(parm) { return parm.generate_asg(decls); })));
+		 }
 	}
 
 	// untangle declarations
@@ -123,96 +238,6 @@ Observer.prototype.done = function() {
 	
 	// and return it
 	return escodegen.generate(prog);
-};
-
-// tag newly created object and record its property classes
-Observer.prototype.afterObjectExpression = function(pos, obj) {
-	tagObjLit(obj, pos.start_line, pos.start_offset);
-	var obj_klass = getHiddenClass(obj);
-	for(var p in obj) {
-		if(obj.hasOwnProperty(p)) {
-			var desc = Object.getOwnPropertyDescriptor(obj, p);
-			if(!desc.get && !desc.set)
-				tagMember(obj_klass, p, obj[p]);
-		}
-	}
-};
-
-// tag newly created array and record its property classes
-Observer.prototype.afterArrayExpression = function(pos, ary) {
-	setHiddenClass(ary, ArrayClass.make(ary, pos.start_line, pos.start_offset));
-	var klass = getHiddenClass(ary);
-	for(var i=0,n=ary.length;i<n;++i)
-		klass.setPropClass('$$' + i, getHiddenClass(ary[i]));
-};
-
-// tag newly created function object
-Observer.prototype.afterFunctionExpression = function(pos, fn) {
-	tagFn(fn, pos.start_line, pos.start_offset);
-};
-
-// tag receiver object (if invoked via 'new'), and any client objects passed as parameters
-Observer.prototype.atFunctionEntry = function(pos, recv, args) {
-	// TODO: replace with more robust test based on tracking function calls/returns
-	if(recv instanceof args.callee)
-		tagNew(recv, args.callee);
-		
-	// tag client objects when we first see them
-	var fn_class = getHiddenClass(args.callee);
-	for(var i=0,n=args.length;i<n;++i) {
-		if(!hasHiddenClass(args[i])) {
-			setHiddenClass(args[i], ClientObjClass.make(fn_class, i));
-		}
-	}
-};
-
-// simplify handling of function/method/new calls by introducing common method beforeCall
-Observer.prototype.beforeFunctionCall = function(pos, callee, args) {
-	this.beforeCall(pos, null, callee, args, 'function');
-};
-
-Observer.prototype.beforeMethodCall = function(pos, obj, prop, _, args) {
-	if(obj) {
-		var callee = obj[prop];
-		// flatten out reflective calls
-		if(callee === Function.prototype.call)
-			this.beforeCall(pos, args[0], obj, Array.prototype.slice.call(args, 1), 'method');
-		else if(callee === Function.prototype.apply)
-			this.beforeCall(pos, args[0], obj, args[1], 'method');
-		else
-			this.beforeCall(pos, obj, callee, args, 'method');
-	}
-};
-
-Observer.prototype.beforeNewExpression = function(pos, callee, args) {
-	this.beforeCall(pos, null, callee, args, 'new');
-};
-
-// record invocations of client callbacks
-Observer.prototype.beforeCall = function(pos, recv, callee, args, kind) {
-	if (typeof callee === 'function' && hasHiddenClass(callee)) {
-		var callee_class = getHiddenClass(callee);
-		if (callee_class instanceof ClientObjClass) {
-			var arg_classes = Array.prototype.map.call(args, getHiddenClass);
-			recv = kind === 'method' && getHiddenClass(recv);
-			
-			// record call, but only if there isn't already an equivalent call
-			var global_class = GlobalClass.GLOBAL;
-			for(var i=0,n=global_class.calls.length;i<n;++i) {
-				var call = global_class.calls[i];
-				if(call.callee === callee_class && array_eq(call.args, arg_classes) &&
-				   call.kind === kind && call.recv === recv)
-					return;
-			}
-			
-			global_class.calls.push({
-				callee: callee_class,
-				recv: recv,
-				args: arg_classes,
-				kind: kind
-			});
-		}
-	}
 };
 
 exports.Observer = Observer;

@@ -8,11 +8,20 @@
  * Contributors:
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
+ 
+ /*global require exports */
+ 
+ var Model = require('./Model').Model;
 
-/*global require global*/ 
-
-if(!global.__observer) {
-	var Observer = require('./Observer').Observer;
-
-	global.__observer = new Observer(global);
+function PrimitiveModel() {
+	Model.call(this);
 }
+
+var UNDEFINED = exports.UNDEFINED = new PrimitiveModel(),
+    NULL = exports.NULL = new PrimitiveModel(),
+    NUMBER = exports.NUMBER = new PrimitiveModel(),
+	BOOLEAN = exports.BOOLEAN = new PrimitiveModel(),
+	STRING = exports.STRING = new PrimitiveModel(),
+	REGEXP = exports.REGEXP = new PrimitiveModel();
+	
+exports.PrimitiveModel = PrimitiveModel;

@@ -8,11 +8,12 @@
  * Contributors:
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
+ 
+ /*global require exports */
 
-/*global require global*/ 
-
-if(!global.__observer) {
-	var Observer = require('./Observer').Observer;
-
-	global.__observer = new Observer(global);
+function Model() {
+	this.id = Model.next_model_id++;
 }
+Model.next_model_id = 0;
+
+exports.Model = Model;

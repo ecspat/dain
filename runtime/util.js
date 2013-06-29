@@ -16,6 +16,12 @@ exports.setHiddenProp = function(obj, prop, val) {
 	Object.defineProperty(obj, prop, { enumerable: false, writable: true, value: val });
 	return val;
 };
+
+// checks whether obj has an own property prop; if so, returns it; otherwise, creates a hidden
+// property prop with value deflt
+exports.getOrCreateHiddenProp = function(obj, prop, deflt) {
+	return obj.hasOwnProperty(prop) ? obj[prop] : exports.setHiddenProp(obj, prop, deflt);
+};
 	
 // utility function for adding element to array if it isn't in there yet
 exports.add = function(array, elt) {
@@ -37,5 +43,16 @@ exports.array_eq = function(a, b) {
 
 // rough check whether a given string is a valid identifier
 exports.isIdentifier = function(str) {
-	return str.match(/^[a-zA-Z_$][0-9a-zA-Z_$]*$/);
+	return String(str).match(/^[a-zA-Z_$][0-9a-zA-Z_$]*$/);
+};
+
+exports.forEach = function(obj, cb) {
+	var res = {};
+	for(var p in obj)
+		res[p] = cb(p, obj[p]);
+	return res;
+};
+
+exports.isObject = function(x) {
+	return x && (typeof x === 'function' || typeof x === 'object');
 };

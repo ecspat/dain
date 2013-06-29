@@ -27,7 +27,7 @@ var esprima = require('esprima'),
     
 function instrument(file, load, test, cb) {
 	var b = browserify("./runtime/runtime.js");
-	b.bundle({ /*debug: true*/ }, function(err, runtime) {
+	b.bundle({ debug: true }, function(err, runtime) {
 		if(err)
 			throw new Error(err);
 
