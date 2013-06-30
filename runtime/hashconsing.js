@@ -21,7 +21,6 @@ var Model = require('./Model').Model,
     FunctionModel = require('./FunctionModel').FunctionModel,
     Union = require('./Union').Union,
     util = require('./util'),
-    forEach = util.forEach,
     add = util.add,
     array_eq = util.array_eq;
     
@@ -46,16 +45,22 @@ ObjModel.prototype.signature = function() {
 };
 
 ObjModel.prototype.hashcons = function() {
-	if(this.circular) {
-		return this;
+	if(this.visited) {
+		return this.hashconsed;
+	} else {
+		this.visited = true;
+		this.hashconsed = this;
 	}
 	
-	forEach(this.property_models, function(_, model) {
-		return model.hashcons();
-	});
+	for(var p in this.property_models)
+		this.property_models[p] = this.property_models[p].hashcons();
 	
-	var sig = this.signature();
-	return ObjModel.cache[sig] || (ObjModel.cache[sig] = this);
+	if(this.circular) {
+		return this;
+	} else {
+		var sig = this.signature();
+		return this.hashconsed = (ObjModel.cache[sig] || (ObjModel.cache[sig] = this));
+	}
 };
 
 // array models work basically the same as object models, but we give them a slightly
@@ -75,21 +80,23 @@ FunctionModel.prototype.signature = function() {
 };
 
 FunctionModel.prototype.hashcons = function() {
-	if(this.circular) {
-		return this;
+	if(this.visited) {
+		return this.hashconsed;
+	} else {
+		this.visited = true;
+		this.hashconsed = this;
 	}
 		
-	forEach(this.property_models, function(_, model) {
-		return model.hashcons();
-	});
+	for(var p in this.property_models)
+		this.property_models[p] = this.property_models[p].hashcons();
 	this.instance_model = this.instance_model.hashcons();
 	this.return_model = this.return_model.hashcons();
 	
-	if(this.used_params.length > 0) {
+	if(this.circular || this.used_params.length > 0) {
 		return this;
 	} else {
 		var sig = this.signature();
-		return FunctionModel.cache[sig] || (FunctionModel.cache[sig] = this);
+		return this.hashconsed = (FunctionModel.cache[sig] || (FunctionModel.cache[sig] = this));
 	}	
 };
 
@@ -104,17 +111,29 @@ Union.prototype.signature = function(members) {
 	return ids.sort().join(',');
 };
 
-Union.prototype.hashcons = function(members) {
-	if(this.circular) {
-		return this;
+Union.prototype.hashcons = function() {
+	if(this.visited) {
+		return this.hashconsed;
 	} else {
-		var sig = this.signature();
-		return Union.cache[sig] || (Union.cache[sig] = this);
+		this.hashconsed = this;
+		this.visited = true;
 	}
+	
+	var members = [];
+	for(var i=0,n=this.members.length;i<n;++i) {
+		add(members, this.members[i].hashcons());
+	}
+	this.members = members;
+	
+	var sig = this.signature();
+	return this.hashconsed = (Union.cache[sig] || (Union.cache[sig] = this));
 };
 
 // the global model itself isn't hashconsed, but callbacks may be
 GlobalModel.prototype.hashcons = function() {
+	for(var p in this.property_models)
+		this.property_models[p] = this.property_models[p].hashcons();
+
 	var callbacks = [];
 	this.callbacks.forEach(function(callback) {
 		callback.callee = callback.callee.hashcons();
