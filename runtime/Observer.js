@@ -156,8 +156,7 @@ Observer.prototype.beforeNewExpression = function(pos, callee, args) {
 Observer.prototype.beforeCall = function(pos, recv, callee, args, kind) {
 	if (typeof callee === 'function') {
 		// record receiver and arguments
-		if(recv)
-			add(getParameterCache(callee, 0), recv);
+		add(getParameterCache(callee, 0), recv);
 		for(var i=0,n=args.length;i<n;++i) {
 			add(getParameterCache(callee, i+1), args[i]);
 		}
@@ -178,9 +177,8 @@ Observer.prototype.done = function() {
 	
 	// hashcons non-circular models
 	global_model.checkCircularity();
-	global_model.hashcons();
-	
 	global_model.findUsedClientObjects();
+	global_model.hashcons();
 	
 	// create definitions for all global variables
 	for (var p in global_model.property_models) {
@@ -194,7 +192,7 @@ Observer.prototype.done = function() {
 		var callee = callback.callee,
 			args = callback.args;
 			
-		if(!args[0]) {
+		if(callback.kind === 'function' || callback.kind === 'new') {
 			decls.push(mkCallStmt(callee.generate_asg(decls),
 								  args.slice(1).map(function(arg) { return arg.generate_asg(decls); }),
 								  callback.kind === 'new'));
