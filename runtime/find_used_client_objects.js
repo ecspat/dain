@@ -26,6 +26,5 @@ Model.prototype.findUsedClientObjects = function() {
 };
 
 ClientObjModel.prototype.findUsedClientObjects = function() {
-	debugger;
 	this.fn_model.used_params[this.idx] = true;
 };
