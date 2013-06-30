@@ -46,16 +46,16 @@ ObjModel.prototype.signature = function() {
 };
 
 ObjModel.prototype.hashcons = function() {
+	if(this.circular) {
+		return this;
+	}
+	
 	forEach(this.property_models, function(_, model) {
 		return model.hashcons();
 	});
 	
-	if(this.circular) {
-		return this;
-	} else {
-		var sig = this.signature();
-		return ObjModel.cache[sig] || (ObjModel.cache[sig] = this);
-	}
+	var sig = this.signature();
+	return ObjModel.cache[sig] || (ObjModel.cache[sig] = this);
 };
 
 // array models work basically the same as object models, but we give them a slightly
@@ -75,13 +75,17 @@ FunctionModel.prototype.signature = function() {
 };
 
 FunctionModel.prototype.hashcons = function() {
+	if(this.circular) {
+		return this;
+	}
+		
 	forEach(this.property_models, function(_, model) {
 		return model.hashcons();
 	});
 	this.instance_model = this.instance_model.hashcons();
 	this.return_model = this.return_model.hashcons();
 	
-	if(this.circular || this.used_params.length > 0) {
+	if(this.used_params.length > 0) {
 		return this;
 	} else {
 		var sig = this.signature();
@@ -111,7 +115,6 @@ Union.prototype.hashcons = function(members) {
 
 // the global model itself isn't hashconsed, but callbacks may be
 GlobalModel.prototype.hashcons = function() {
-	debugger;
 	var callbacks = [];
 	this.callbacks.forEach(function(callback) {
 		callback.callee = callback.callee.hashcons();
