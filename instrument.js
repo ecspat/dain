@@ -71,7 +71,7 @@ if (require.main === module) {
 
 	argParser.addArgument(['-l', '--load'], {
 		nargs: 0,
-		help: 'Immediately load instrumented code in a ' + 'trivial HTML page.'
+		help: 'Immediately load instrumented code in a trivial HTML page.'
 	});
 
 	var r = argParser.parseKnownArgs();
