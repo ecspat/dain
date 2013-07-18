@@ -12,7 +12,8 @@
 /*global require global*/ 
 
 if(!global.__observer) {
-	var Observer = require('./Observer').Observer;
+	var Observer = require('./Observer').Observer,
+	    Runtime = require('eavesdropper/runtime');
 
-	global.__observer = new Observer(global);
+	global.__runtime = new Runtime(new Observer());
 }

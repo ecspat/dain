@@ -52,7 +52,7 @@ function instrument(file, load, test, cb) {
 						console.error(browser.errors.join('\n'));
 						return;
 					}
-					cb(browser.window.__observer.done());
+					cb(browser.window.__runtime.observer.done());
 				}, 1000);
 			});
 		} else {

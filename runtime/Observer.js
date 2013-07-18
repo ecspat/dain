@@ -31,141 +31,145 @@ require('./hashconsing');
 require('./find_used_client_objects');
 
 /** The observer is notified by the dynamic instrumentation framework of events happening in the instrumented program. */
-function Observer(global) {
-	this.global = global;
-	setOrigin(global, { start_line: -1, start_offset: -1 }, 'global');
+function Observer() {
+	this.current_fn = [];
 }
 
-// nothing special happens on these events
-Observer.prototype.beforeMemberRead = function(){};
-Observer.prototype.atFunctionExit = function(){};
+function mkTag(type, pos) {
+	return {
+		origin: pos || { start_line: -1, start_offset: -1 },
+		type: type,
+		props: {}
+	};
+}
+
+Observer.prototype.tagGlobal = function(global) {
+	var global_tag = mkTag('global');
+	global_tag.callbacks = [];
+	return global_tag;
+};
+
+Observer.prototype.setGlobal = function(global) {
+	this.global = global;
+};
+
+Observer.prototype.tagLiteral = function(lit) {
+	var tp = typeof lit;
+	switch(tp) {
+	case 'undefined':
+	case 'boolean':
+	case 'number':
+	case 'string':
+		return mkTag(tp);
+	case 'object':
+		if(!lit)
+			return mkTag('null');
+		if(lit instanceof RegExp)
+			return mkTag('regexp');		
+		return Array.isArray(lit) ? mkTag('arraylit') : mkTag('objlit');
+	case 'function':
+		var tag = mkTag('function');
+		tag.parms = [];
+		tag.instances = [];
+		tag.ret = [];
+		return tag;
+	}
+};
+
+Observer.prototype.tagForInVar = function() {
+	return mkTag('string');
+};
+
+Observer.prototype.tagNativeException = function() {
+	return mkTag('unknown');
+};
+
+Observer.prototype.tagNativeArgument = function(callee, arg, idx) {
+	var tag = mkTag('client object');
+	tag.fn = callee;
+	tag.index = idx;
+	return tag;
+};
+
+Observer.prototype.tagNativeResult = function(res, callee, recv, args) {
+	return mkTag('unknown');
+};
+
+Observer.prototype.tagNewInstance = function(res, callee, args) {
+	var tag = mkTag('instance');
+	tag.fn = callee;
+	callee.getTag().instances.push(tag);
+	return tag;
+};
+
+Observer.prototype.tagNewNativeInstance = function() {
+	return mkTag('unknown');
+};
+
+Observer.prototype.tagDefaultPrototype = function() {
+	return mkTag('objlit');
+};
+
+Observer.prototype.tagUnOpResult = function(res) {
+	return mkTag(typeof res);
+};
+
+Observer.prototype.tagBinOpResult = function(res) {
+	return mkTag(typeof res);
+};
+
+Observer.prototype.tagPropRead = function(val, obj, prop, stored_tag) {
+	return stored_tag;
+};
 
 function getPropertyCache(obj, prop) {
-	var prop_caches = getOrCreateHiddenProp(obj, '__properties', {});
-	return prop_caches['$$' + prop] || (prop_caches['$$' + prop] = []);
+	var tag = obj.getTag ? obj.getTag() : obj;
+	var prop_cache = tag.props;
+	return prop_cache['$$' + prop] || (prop_cache['$$' + prop] = []);
 }
 
 function getParameterCache(fn, i) {
-	var parm_caches = getOrCreateHiddenProp(fn, '__parameters', []);
-	return parm_caches[i] || (parm_caches[i] = []);
+	var parm_cache = fn.getTag().parms;
+	return parm_cache[i] || (parm_cache[i] = []);
 }
 
-function hasOrigin(obj) {
-	return obj.hasOwnProperty('__origin');
-}
+Observer.prototype.tagPropWrite = function(obj, prop, val, stored_tag) {
+	add(getPropertyCache(obj, prop.getValue()), val.getTag());
+	return val.getTag();
+};
 
-function setOrigin(obj, pos, type, data) {
-	var origin = {
-		start_line: pos.start_line,
-		start_offset: pos.start_offset,
-		type: type,
-		data: data
-	};
-	setHiddenProp(obj, '__origin', origin);
-}
+Observer.prototype.enterFunction = function(pos, fn) {
+	this.current_fn.push(fn);
+};
 
-function getOrigin(obj) {
-	if(!hasOrigin(obj)) {
-		setOrigin(obj, { start_line: -1, start_offset: -1, type: 'unknown' });
-	}
-	return obj.__origin;
-}
-
-// record value written into property
-Observer.prototype.beforeMemberWrite = function(pos, obj, prop, val) {
-	add(getPropertyCache(obj, prop), val);
+Observer.prototype.leaveFunction = function() {
+	this.current_fn.pop();
 };
 
 // record return value, unless it's undefined
-Observer.prototype.atFunctionReturn = function(pos, fn, ret) {
-	// returning 'undefined' isn't interesting, forget about it
-	if (ret !== void(0))
-		add(getOrCreateHiddenProp(fn, '__return', []), ret);	
+Observer.prototype.returnFromFunction = function(retval) {
+	if(retval.getValue() !== void(0)) {
+		var fn = this.current_fn[this.current_fn.length-1];
+		add(fn.getTag().ret, retval.getTag());
+	}
 };
 
-// tag newly created object and record its properties
-Observer.prototype.afterObjectExpression = function(pos, obj) {
-	setOrigin(obj, pos, 'objlit');
-	for(var p in obj) {
-		if(obj.hasOwnProperty(p)) {
-			var desc = Object.getOwnPropertyDescriptor(obj, p);
-			if(!desc.get && !desc.set) {
-				this.beforeMemberWrite(pos, obj, p, obj[p]);
-			}
+Observer.prototype.funcall = function(pos, callee, recv, args) {
+	// flatten out reflective calls
+	switch(callee.getValue()) {
+	case Function.prototype.call:
+		return this.funcall(pos, recv, args[0], Array.prototype.slice.call(args, 1));
+	case Function.prototype.apply:
+		return this.funcall(pos, recv, args[0], args[1]);
+	default:
+		if(callee.getTag().type === 'client object') {
+			add(this.global.getTag().callbacks, { callee: callee, kind: 'funcall' });
 		}
 	}
 };
 
-// tag newly created array and record its property classes
-Observer.prototype.afterArrayExpression = function(pos, ary) {
-	setOrigin(ary, pos, 'arraylit');
-	for(var i=0,n=ary.length;i<n;++i) {
-		this.beforeMemberWrite(pos, ary, i, ary[i]);
-	}
-};
-
-// tag newly created function object and its .prototype
-Observer.prototype.afterFunctionExpression = function(pos, fn) {
-	setOrigin(fn, pos, 'function');
-	
-	var proto = fn.prototype;
-	setOrigin(proto, pos, 'default proto');
-	this.beforeMemberWrite(pos, fn, 'prototype', fn.prototype);
-	//this.beforeMemberWrite(pos, fn.prototype, 'constructor', fn);
-};
-
-// tag receiver object (if invoked via 'new'), and any client objects passed as parameters
-Observer.prototype.atFunctionEntry = function(pos, recv, args) {
-	// TODO: replace with more robust test based on tracking function calls/returns
-	if(recv instanceof args.callee) {
-		setOrigin(recv, pos, 'instance', args.callee);
-		getOrCreateHiddenProp(args.callee, '__instances', []).push(recv);
-	}
-		
-	// tag client objects when we first see them
-	for(var i=0,n=args.length;i<n;++i) {
-		if(isObject(args[i]) && !hasOrigin(args[i])) {
-			setOrigin(args[i], pos, 'client object', { fn: args.callee, index: i });
-		}
-	}
-};
-
-// simplify handling of function/method/new calls by introducing common method beforeCall
-Observer.prototype.beforeFunctionCall = function(pos, callee, args) {
-	this.beforeCall(pos, null, callee, args, 'function');
-};
-
-Observer.prototype.beforeMethodCall = function(pos, obj, prop, _, args) {
-	if(obj) {
-		var callee = obj[prop];
-		// flatten out reflective calls
-		if(callee === Function.prototype.call)
-			this.beforeCall(pos, args[0], obj, Array.prototype.slice.call(args, 1), 'method');
-		else if(callee === Function.prototype.apply)
-			this.beforeCall(pos, args[0], obj, args[1], 'method');
-		else
-			this.beforeCall(pos, obj, callee, args, 'method');
-	}
-};
-
-Observer.prototype.beforeNewExpression = function(pos, callee, args) {
-	this.beforeCall(pos, null, callee, args, 'new');
-};
-
-// record invocations of client callbacks
-Observer.prototype.beforeCall = function(pos, recv, callee, args, kind) {
-	if (typeof callee === 'function') {
-		// record receiver and arguments
-		add(getParameterCache(callee, 0), recv);
-		for(var i=0,n=args.length;i<n;++i) {
-			add(getParameterCache(callee, i+1), args[i]);
-		}
-		
-		// record invocation of client callback
-		if(getOrigin(callee).type === 'client object') {
-			add(getOrCreateHiddenProp(this.global, '__callbacks', []), { callee: callee, kind: kind });
-		}
-	}
+Observer.prototype.newexpr = function(pos, callee, args) {
+	this.funcall(pos, callee, null, args);
 };
 
 // generate model
