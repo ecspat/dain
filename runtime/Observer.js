@@ -119,7 +119,7 @@ Observer.prototype.tagBinOpResult = function(res) {
 };
 
 Observer.prototype.tagPropRead = function(val, obj, prop, stored_tag) {
-	return stored_tag;
+	return stored_tag || mkTag('unknown');
 };
 
 function getPropertyCache(obj, prop) {

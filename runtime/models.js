@@ -32,10 +32,12 @@ var util = require('./util'),
     setHiddenProp = util.setHiddenProp;
 
 function getModel(obj) {
-	var tag = obj.getTag ? obj.getTag() : obj, model, property_models;
+	// TODO: the type test in the next line is ugly
+	var tag = obj.getTag && obj.getTag() || obj.hasOwnProperty('__tag') && obj.__tag || obj, model, property_models;
 	
 	if(tag.model)
 		return tag.model;
+		
 	switch(tag.type) {
 	case 'undefined':
 		tag.model = UNDEFINED;
@@ -79,6 +81,7 @@ function getModel(obj) {
 		break;
 	case 'arraylit':
 	case 'objlit':
+	case 'unknown':
 		tag.model = tag.type === 'arraylit' ? new ArrayModel() : new ObjModel();
 		property_models = forEach(tag.props, function(prop, vals) {
 			return Union.make(vals.map(getModel));
@@ -92,7 +95,6 @@ function getModel(obj) {
 		});
 		tag.model.addPropertyModels(property_models);
 			
-		debugger;
 		tag.instances.forEach(function(inst) { 
 			var instance_property_models = forEach(inst.props, function(prop, vals) {
 				return Union.make(vals.map(getModel));
