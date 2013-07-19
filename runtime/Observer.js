@@ -44,9 +44,10 @@ function mkTag(type, pos) {
 }
 
 Observer.prototype.tagGlobal = function(global) {
-	var global_tag = mkTag('global');
-	global_tag.callbacks = [];
-	return global_tag;
+	var tag = mkTag('global');
+	tag.callbacks = [];
+	Object.defineProperty(global, "__tag", { enumerable: false, writable: true, value: tag });
+	return tag;
 };
 
 Observer.prototype.setGlobal = function(global) {
@@ -54,7 +55,7 @@ Observer.prototype.setGlobal = function(global) {
 };
 
 Observer.prototype.tagLiteral = function(lit) {
-	var tp = typeof lit;
+	var tp = typeof lit, tag;
 	switch(tp) {
 	case 'undefined':
 	case 'boolean':
@@ -66,12 +67,15 @@ Observer.prototype.tagLiteral = function(lit) {
 			return mkTag('null');
 		if(lit instanceof RegExp)
 			return mkTag('regexp');		
-		return Array.isArray(lit) ? mkTag('arraylit') : mkTag('objlit');
+		tag = Array.isArray(lit) ? mkTag('arraylit') : mkTag('objlit');
+		Object.defineProperty(lit, "__tag", { enumerable: false, writable: true, value: tag });
+		return tag;
 	case 'function':
-		var tag = mkTag('function');
+		tag = mkTag('function');
 		tag.parms = [];
 		tag.instances = [];
 		tag.ret = [];
+		Object.defineProperty(lit, "__tag", { enumerable: false, writable: true, value: tag });
 		return tag;
 	}
 };
@@ -88,6 +92,9 @@ Observer.prototype.tagNativeArgument = function(callee, arg, idx) {
 	var tag = mkTag('client object');
 	tag.fn = callee;
 	tag.index = idx;
+	if(Object(arg) === arg) {
+		Object.defineProperty(arg, "__tag", { enumerable: false, writable: true, value: tag });
+	}
 	return tag;
 };
 
@@ -123,7 +130,7 @@ Observer.prototype.tagBinOpResult = function(res) {
 };
 
 Observer.prototype.tagPropRead = function(val, obj, prop, stored_tag) {
-	return stored_tag || mkTag('unknown');
+	return stored_tag || val && val.__tag || mkTag('unknown');
 };
 
 function getPropertyCache(obj, prop) {
@@ -158,24 +165,25 @@ Observer.prototype.returnFromFunction = function(retval) {
 	}
 };
 
-Observer.prototype.funcall = function(pos, callee, recv, args) {
+Observer.prototype.funcall = function(pos, callee, recv, args, kind) {
+	kind = kind || 'function';
 	// flatten out reflective calls
 	switch(callee.getValue()) {
 	case Function.prototype.call:
-		return this.funcall(pos, recv, args[0], Array.prototype.slice.call(args, 1));
+		return this.funcall(pos, recv, args[0], Array.prototype.slice.call(args, 1), 'method');
 	case Function.prototype.apply:
-		return this.funcall(pos, recv, args[0], args[1]);
+		return this.funcall(pos, recv, args[0], args[1], 'method');
 	default:
 		if(callee.getTag().type === 'client object') {
 			add(this.global.getTag().callbacks, { callee: callee,
-												  kind: 'function',
+												  kind: kind,
 												  args: [recv || this.tagLiteral(recv)].concat(args) });
 		}
 	}
 };
 
 Observer.prototype.newexpr = function(pos, callee, args) {
-	this.funcall(pos, callee, null, args);
+	this.funcall(pos, callee, null, args, 'new');
 };
 
 // generate model
