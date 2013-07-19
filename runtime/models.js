@@ -64,11 +64,10 @@ function getModel(obj) {
 		});
 		tag.model.addPropertyModels(property_models);
 		tag.model.addCallbacks(tag.callbacks.map(function(info) {
+			debugger;
 			return {
 				callee: getModel(info.callee),
-				args: getOrCreateHiddenProp(info.callee, '__parameters', []).map(function(vals) {
-					return Union.make(vals.map(getModel));
-				}),
+				args: info.args.map(getModel),
 				kind: info.kind
 			};
 		}));
