@@ -64,7 +64,6 @@ function getModel(obj) {
 		});
 		tag.model.addPropertyModels(property_models);
 		tag.model.addCallbacks(tag.callbacks.map(function(info) {
-			debugger;
 			return {
 				callee: getModel(info.callee),
 				args: info.args.map(getModel),

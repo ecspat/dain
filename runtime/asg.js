@@ -46,7 +46,9 @@ var add = require('./util').add,
 
 /* methods for constructing ASGs */
 FunctionModel.prototype.generate_asg = function(decls) {
-	if (this.asg) return this.asg;
+	if (this.asg) {
+		return this.asg;
+	}
 
 	var body = [],
 		params = [];
