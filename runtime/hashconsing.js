@@ -131,6 +131,10 @@ Union.prototype.hashcons = function() {
 
 // the global model itself isn't hashconsed, but callbacks may be
 GlobalModel.prototype.hashcons = function() {
+	if(this.hashconsed)
+		return this;
+	this.hashconsed = true;
+		
 	for(var p in this.property_models)
 		this.property_models[p] = this.property_models[p].hashcons();
 

@@ -169,7 +169,7 @@ Observer.prototype.funcall = function(pos, callee, recv, args) {
 		if(callee.getTag().type === 'client object') {
 			add(this.global.getTag().callbacks, { callee: callee,
 												  kind: 'function',
-												  args: [this.tagLiteral(null)].concat(args) });
+												  args: [recv || this.tagLiteral(recv)].concat(args) });
 		}
 	}
 };

@@ -35,8 +35,9 @@ GlobalModel.prototype.getChildren = function() {
 	this.callbacks.forEach(function(callback) {
 		add(children, callback.callee);
 		callback.args.forEach(function(arg) {
-			if(arg)
+			if(arg) {
 				add(children, arg);
+			}
 		});
 	});
 	return children;
