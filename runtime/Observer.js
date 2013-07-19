@@ -89,6 +89,9 @@ Observer.prototype.tagNativeException = function() {
 };
 
 Observer.prototype.tagNativeArgument = function(callee, arg, idx) {
+	if(arg && arg.hasOwnProperty('__tag'))
+		return arg.__tag;
+		
 	var tag = mkTag('client object');
 	tag.fn = callee;
 	tag.index = idx;
