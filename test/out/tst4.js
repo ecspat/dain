@@ -1,9 +1,9 @@
 var f;
 (function() {
-	var function_7_0;
-	f = function(x0) {
-		function_7_0 = x0;
+	var function_7_1;
+	f = function(x1) {
+		function_7_1 = x1;
 		return Math.random();
 	};
-	function_7_0();
+	function_7_1();
 })();

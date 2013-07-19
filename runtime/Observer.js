@@ -92,7 +92,11 @@ Observer.prototype.tagNativeArgument = function(callee, arg, idx) {
 };
 
 Observer.prototype.tagNativeResult = function(res, callee, recv, args) {
-	return mkTag('unknown');
+	if(Object(res) === Object) {
+		return res.__tag || mkTag('unknown');
+	} else {
+		return this.tagLiteral(res);
+	}
 };
 
 Observer.prototype.tagNewInstance = function(res, callee, args) {
@@ -163,7 +167,7 @@ Observer.prototype.funcall = function(pos, callee, recv, args) {
 		return this.funcall(pos, recv, args[0], args[1]);
 	default:
 		if(callee.getTag().type === 'client object') {
-			add(this.global.getTag().callbacks, { callee: callee, kind: 'funcall' });
+			add(this.global.getTag().callbacks, { callee: callee, kind: 'function' });
 		}
 	}
 };

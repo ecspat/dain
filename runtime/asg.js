@@ -66,7 +66,11 @@ FunctionModel.prototype.generate_asg = function(decls) {
 	};
 	
 	// handle used parameters
-	for(var i=0,n=this.used_params.length;i<n;++i) {
+	if(this.used_params[0]) {
+		body.push(mkAssignStmt(mkIdentifier('function_' + this.id + '_0'),
+							   mkThis()));
+	}
+	for(var i=1,n=this.used_params.length;i<n;++i) {
 		params.push(mkIdentifier('x' + i));
 		if(i in this.used_params) {
 			body.push(mkAssignStmt(mkIdentifier('function_' + this.id + '_' + i),
