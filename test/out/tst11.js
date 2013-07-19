@@ -1,17 +1,17 @@
 var register, invoke, cbs;
 
 (function() {
-	var function_7_0, function_10_0;
+	var function_7_1, function_10_1;
 	
-	register = function (x0) {
-	    function_7_0 = x0;
+	register = function (x1) {
+	    function_7_1 = x1;
 	};
 	
-	invoke = function (x0) {
-	    function_10_0 = x0;
+	invoke = function (x1) {
+	    function_10_1 = x1;
 	};
 
 	cbs = [];
 	
-	function_7_0.call(function_10_0, Math.random());
+	function_7_1.call(function_10_1, Math.random());
 })();
