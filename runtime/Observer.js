@@ -102,10 +102,18 @@ Observer.prototype.tagNativeArgument = function(callee, arg, idx) {
 };
 
 Observer.prototype.tagNativeResult = function(res, callee, recv, args) {
-	if(Object(res) === Object) {
+	if(Object(res) === res) {
 		return res.__tag || mkTag('unknown');
 	} else {
 		return this.tagLiteral(res);
+	}
+};
+
+Observer.prototype.tagNativeProperty = function(obj, prop, val) {
+	if(Object(val) === val) {
+		return val.__tag || mkTag('unknown');
+	} else {
+		return this.tagLiteral(val);
 	}
 };
 
@@ -133,7 +141,7 @@ Observer.prototype.tagBinOpResult = function(res) {
 };
 
 Observer.prototype.tagPropRead = function(val, obj, prop, stored_tag) {
-	return stored_tag || val && val.__tag || mkTag('unknown');
+	return stored_tag;
 };
 
 function getPropertyCache(obj, prop) {
@@ -147,7 +155,7 @@ function getParameterCache(fn, i) {
 	return parm_cache[i] || (parm_cache[i] = []);
 }
 
-Observer.prototype.tagPropWrite = function(obj, prop, val, stored_tag) {
+Observer.prototype.tagPropWrite = function(obj, prop, val) {
 	add(getPropertyCache(obj, prop.getValue()), val.getTag());
 	return val.getTag();
 };
@@ -170,18 +178,10 @@ Observer.prototype.returnFromFunction = function(retval) {
 
 Observer.prototype.funcall = function(pos, callee, recv, args, kind) {
 	kind = kind || 'function';
-	// flatten out reflective calls
-	switch(callee.getValue()) {
-	case Function.prototype.call:
-		return this.funcall(pos, recv, args[0], Array.prototype.slice.call(args, 1), 'method');
-	case Function.prototype.apply:
-		return this.funcall(pos, recv, args[0], args[1], 'method');
-	default:
-		if(callee.getTag().type === 'client object') {
-			add(this.global.getTag().callbacks, { callee: callee,
-												  kind: kind,
-												  args: [recv || this.tagLiteral(recv)].concat(args) });
-		}
+	if(callee.getTag().type === 'client object') {
+		add(this.global.getTag().callbacks, { callee: callee,
+											  kind: kind,
+											  args: [recv || this.tagLiteral(recv)].concat(args) });
 	}
 };
 
