@@ -19,6 +19,7 @@ var Model = require('./Model').Model,
     ClientObjModel = require('./ClientObjModel').ClientObjModel,
     GlobalModel = require('./GlobalModel').GlobalModel,
     FunctionModel = require('./FunctionModel').FunctionModel,
+    InstanceModel = require('./InstanceModel').InstanceModel,
     Union = require('./Union').Union,
     util = require('./util'),
     add = util.add,
@@ -42,6 +43,11 @@ ObjModel.prototype.signature = function() {
 	return Object.keys(property_models).sort().map(function(p) {
 		return p.substring(2) + ":" + property_models[p].id;
 	}).join(',');
+};
+
+// slightly different signature for instance model to prevent them from being hashconsed together with other objects
+InstanceModel.prototype.signature = function() {
+	return "Instance(" + ObjModel.prototype.signature.call(this) + ")";
 };
 
 ObjModel.prototype.hashcons = function() {

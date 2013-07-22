@@ -27,7 +27,7 @@ var esprima = require('esprima'),
     
 function instrument(file, load, test, cb) {
 	var b = browserify("./runtime/runtime.js");
-	b.bundle({ debug: true }, function(err, runtime) {
+	b.bundle({ debug: false }, function(err, runtime) {
 		if(err)
 			throw new Error(err);
 
@@ -47,13 +47,13 @@ function instrument(file, load, test, cb) {
 						"</html>\n");
 
 			Browser.visit("file://" + htmlTmp.path, function(e, browser, status) {
-				setTimeout(function() {
+				//setTimeout(function() {
 					if (browser.errors && browser.errors.length) {
 						console.error(browser.errors.join('\n'));
 						return;
 					}
 					cb(browser.window.__runtime.observer.done());
-				}, 1000);
+				//}, 1000);
 			});
 		} else {
 			cb(instrumented_src + (test ? fs.readFileSync(test, 'utf-8') : ''));
