@@ -123,7 +123,7 @@ InstanceModel.prototype.generate_asg = function(decls) {
 		type: 'NewExpression',
 		callee: fn_asg,
 		'arguments': [],
-		temp_name: 'new_' + fn_asg
+		temp_name: 'new_' + this.fn_model.id
 	};
 };
 
