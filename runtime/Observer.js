@@ -17,7 +17,6 @@
      util = require('./util'),
      add = util.add,
      isObject = util.isObject,
-     getOrCreateHiddenProp = util.getOrCreateHiddenProp.type === 'client object'
      setHiddenProp = util.setHiddenProp,
      mkAssignStmt = ast.mkAssignStmt,
      mkIdentifier = ast.mkIdentifier,
@@ -137,7 +136,9 @@ Observer.prototype.tagPropRead = function(val, obj, prop, stored_tag) {
 };
 
 Observer.prototype.tagPropWrite = function(obj, prop, val) {
-	obj.getTag().addPropertyModel('$$' + prop.getValue(), val.getTag());
+	if(obj.getTag() instanceof ObjModel) {
+		obj.getTag().addPropertyModel('$$' + prop.getValue(), val.getTag());
+	}
 	return val.getTag();
 };
 

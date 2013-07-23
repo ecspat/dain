@@ -44,6 +44,7 @@ FunctionModel.prototype.addReturnModel = function(model) {
 FunctionModel.prototype.getChildren = function() {
 	var children = ObjModel.prototype.getChildren.call(this);
 	add(children, this.instance_model);
+	add(children, this.default_proto_model);
 	add(children, this.return_model);
 	return children;
 };

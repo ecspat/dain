@@ -51,12 +51,10 @@ InstanceModel.prototype.signature = function() {
 };
 
 ObjModel.prototype.hashcons = function() {
-	if(this.visited) {
+	if(this.hashconsed) {
 		return this.hashconsed;
-	} else {
-		this.visited = true;
-		this.hashconsed = this;
 	}
+	this.hashconsed = this;
 	
 	for(var p in this.property_models)
 		this.property_models[p] = this.property_models[p].hashcons();
@@ -86,12 +84,10 @@ FunctionModel.prototype.signature = function() {
 };
 
 FunctionModel.prototype.hashcons = function() {
-	if(this.visited) {
+	if(this.hashconsed) {
 		return this.hashconsed;
-	} else {
-		this.visited = true;
-		this.hashconsed = this;
 	}
+	this.hashconsed = this;
 		
 	for(var p in this.property_models)
 		this.property_models[p] = this.property_models[p].hashcons();
@@ -118,12 +114,10 @@ Union.prototype.signature = function(members) {
 };
 
 Union.prototype.hashcons = function() {
-	if(this.visited) {
+	if(this.hashconsed) {
 		return this.hashconsed;
-	} else {
-		this.hashconsed = this;
-		this.visited = true;
 	}
+	this.hashconsed = this;
 	
 	var members = [];
 	for(var i=0,n=this.members.length;i<n;++i) {

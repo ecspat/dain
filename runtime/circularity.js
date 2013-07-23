@@ -26,7 +26,7 @@ var Model = require('./Model').Model,
 Model.prototype.checkCircularity = function() {
 	if(this.visited) {
 		this.circular = true;
-	} else {
+	} else if(!this.circular) {
 		this.visited = true;
 		this.getChildren().forEach(function(child) {
 			child.checkCircularity();

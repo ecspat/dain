@@ -16,12 +16,11 @@ var Model = require('./Model').Model,
 
 /* traversal function for finding client objects that are used somewhere */
 Model.prototype.findUsedClientObjects = function() {
-	if(!this.visited) {
-		this.visited = true;
+	if(!this.visited_fuco) {
+		this.visited_fuco = true;
 		this.getChildren().forEach(function(child) {
 			child.findUsedClientObjects();
 		});
-		delete this.visited;
 	}
 };
 
