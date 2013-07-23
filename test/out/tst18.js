@@ -1,13 +1,13 @@
 var rootjQuery, jQuery;
 (function () {
-    var function_7 = function () {
-        return new_7;
+    var function_15 = function () {
+        return new_15;
     };
-    var new_7 = new function_7();
-    rootjQuery = new function_7();
-    var function_11 = function () {
-        return new_7;
+    var new_15 = new function_15();
+    rootjQuery = new function_15();
+    var function_12 = function () {
+        return new_15;
     };
-    function_11.init = function_7;
-    jQuery = function_11;
+    function_12.init = function_15;
+    jQuery = function_12;
 }());

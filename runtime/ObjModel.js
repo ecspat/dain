@@ -24,16 +24,20 @@ function ObjModel() {
 }
 ObjModel.prototype = Object.create(Model.prototype);
 
-ObjModel.prototype.addPropertyModels = function(property_models) {
-	var self = this;
-	forEach(property_models, function(prop, model) {
-		prop = '$$' + self.normalisePropName(prop.substring(2));
-		if(prop in self.property_models) {
-			self.property_models[prop] = Union.make([self.property_models[prop], model]);
-		} else {
-			self.property_models[prop] = model;
-		}
-	});
+ObjModel.cache = {};
+ObjModel.make = function(pos) {
+	if(!pos || pos.start_offset === -1)
+		return new ObjModel();
+	return ObjModel.cache[pos.start_offset] || (ObjModel.cache[pos.start_offset] = new ObjModel());
+};
+
+ObjModel.prototype.addPropertyModel = function(prop, model) {
+	prop = '$$' + this.normalisePropName(prop.substring(2));
+	if(prop in this.property_models) {
+		this.property_models[prop] = Union.make([this.property_models[prop], model]);
+	} else {
+		this.property_models[prop] = model;
+	}
 };
 
 ObjModel.prototype.normalisePropName = function(prop) {

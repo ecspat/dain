@@ -24,7 +24,14 @@
      mkIdentifier = ast.mkIdentifier,
      mkMemberExpression = ast.mkMemberExpression,
      mkCallStmt = ast.mkCallStmt,
-     getModel = models.getModel;
+     Union = require('./Union').Union,
+     ObjModel = require('./ObjModel').ObjModel,
+     ArrayModel = require('./ArrayModel').ArrayModel,
+     GlobalModel = require('./GlobalModel').GlobalModel,
+     InstanceModel = require('./InstanceModel').InstanceModel,
+     FunctionModel = require('./FunctionModel').FunctionModel,
+     PrimitiveModel = require('./PrimitiveModel'),
+     ClientObjModel = require('./ClientObjModel').ClientObjModel;
      
 require('./circularity');
 require('./hashconsing');
@@ -35,17 +42,8 @@ function Observer() {
 	this.current_fn = [];
 }
 
-function mkTag(type, pos) {
-	return {
-		origin: pos || { start_line: -1, start_offset: -1 },
-		type: type,
-		props: {}
-	};
-}
-
 Observer.prototype.tagGlobal = function(global) {
-	var tag = mkTag('global');
-	tag.callbacks = [];
+	var tag = new GlobalModel(global);
 	Object.defineProperty(global, "__tag", { enumerable: false, writable: true, value: tag });
 	return tag;
 };
@@ -54,47 +52,45 @@ Observer.prototype.setGlobal = function(global) {
 	this.global = global;
 };
 
-Observer.prototype.tagLiteral = function(lit) {
+var tagLiteral = Observer.prototype.tagLiteral = function(pos, lit) {
 	var tp = typeof lit, tag;
 	switch(tp) {
 	case 'undefined':
+		return PrimitiveModel.UNDEFINED;
 	case 'boolean':
+		return PrimitiveModel.BOOLEAN;
 	case 'number':
+		return PrimitiveModel.NUMBER;
 	case 'string':
-		return mkTag(tp);
+		return PrimitiveModel.STRING;
 	case 'object':
 		if(!lit)
-			return mkTag('null');
+			return PrimitiveModel.NULL;
 		if(lit instanceof RegExp)
-			return mkTag('regexp');		
-		tag = Array.isArray(lit) ? mkTag('arraylit') : mkTag('objlit');
+			return PrimitiveModel.REGEXP;
+		tag = Array.isArray(lit) ? ArrayModel.make(pos) : ObjModel.make(pos);
 		Object.defineProperty(lit, "__tag", { enumerable: false, writable: true, value: tag });
 		return tag;
 	case 'function':
-		tag = mkTag('function');
-		tag.parms = [];
-		tag.instances = [];
-		tag.ret = [];
+		tag = FunctionModel.make(pos);
 		Object.defineProperty(lit, "__tag", { enumerable: false, writable: true, value: tag });
 		return tag;
 	}
 };
 
 Observer.prototype.tagForInVar = function() {
-	return mkTag('string');
+	return PrimitiveModel.STRING;
 };
 
 Observer.prototype.tagNativeException = function() {
-	return mkTag('unknown');
+	return new ObjModel();
 };
 
 Observer.prototype.tagNativeArgument = function(callee, arg, idx) {
 	if(arg && arg.hasOwnProperty('__tag'))
 		return arg.__tag;
 		
-	var tag = mkTag('client object');
-	tag.fn = callee;
-	tag.index = idx;
+	var tag = ClientObjModel.make(callee.__tag, idx);
 	if(Object(arg) === arg) {
 		Object.defineProperty(arg, "__tag", { enumerable: false, writable: true, value: tag });
 	}
@@ -103,60 +99,46 @@ Observer.prototype.tagNativeArgument = function(callee, arg, idx) {
 
 Observer.prototype.tagNativeResult = function(res, callee, recv, args) {
 	if(Object(res) === res) {
-		return res.__tag || mkTag('unknown');
+		return res.__tag || new ObjModel();
 	} else {
-		return this.tagLiteral(res);
+		return this.tagLiteral(null, res);
 	}
 };
 
 Observer.prototype.tagNativeProperty = function(obj, prop, val) {
 	if(Object(val) === val) {
-		return val.__tag || mkTag('unknown');
+		return val.__tag || new ObjModel();
 	} else {
-		return this.tagLiteral(val);
+		return this.tagLiteral(null, val);
 	}
 };
 
 Observer.prototype.tagNewInstance = function(res, callee, args) {
-	var tag = mkTag('instance');
-	tag.fn = callee;
-	callee.getTag().instances.push(tag);
-	return tag;
+	return callee.getTag().instance_model;
 };
 
 Observer.prototype.tagNewNativeInstance = function() {
-	return mkTag('unknown');
+	return new ObjModel();
 };
 
-Observer.prototype.tagDefaultPrototype = function() {
-	return mkTag('objlit');
+Observer.prototype.tagDefaultPrototype = function(fn) {
+	return fn.getTag().default_proto_model;
 };
 
 Observer.prototype.tagUnOpResult = function(res) {
-	return mkTag(typeof res);
+	return tagLiteral(null, res);
 };
 
 Observer.prototype.tagBinOpResult = function(res) {
-	return mkTag(typeof res);
+	return tagLiteral(null, res);
 };
 
 Observer.prototype.tagPropRead = function(val, obj, prop, stored_tag) {
 	return stored_tag;
 };
 
-function getPropertyCache(obj, prop) {
-	var tag = obj.getTag ? obj.getTag() : obj;
-	var prop_cache = tag.props;
-	return prop_cache['$$' + prop] || (prop_cache['$$' + prop] = []);
-}
-
-function getParameterCache(fn, i) {
-	var parm_cache = fn.getTag().parms;
-	return parm_cache[i] || (parm_cache[i] = []);
-}
-
 Observer.prototype.tagPropWrite = function(obj, prop, val) {
-	add(getPropertyCache(obj, prop.getValue()), val.getTag());
+	obj.getTag().addPropertyModel('$$' + prop.getValue(), val.getTag());
 	return val.getTag();
 };
 
@@ -172,16 +154,20 @@ Observer.prototype.leaveFunction = function() {
 Observer.prototype.returnFromFunction = function(retval) {
 	if(retval.getValue() !== void(0)) {
 		var fn = this.current_fn[this.current_fn.length-1];
-		add(fn.getTag().ret, retval.getTag());
+		fn.getTag().addReturnModel(retval.getTag());
 	}
 };
 
 Observer.prototype.funcall = function(pos, callee, recv, args, kind) {
 	kind = kind || 'function';
-	if(callee.getTag().type === 'client object') {
-		add(this.global.getTag().callbacks, { callee: callee,
-											  kind: kind,
-											  args: [recv || this.tagLiteral(recv)].concat(args) });
+	if (callee.getTag() instanceof ClientObjModel) {
+		this.global.getTag().callbacks.push({
+			callee: callee.getTag(),
+			args: [recv && recv.getTag() || this.tagLiteral(null, recv)].concat(args.map(function(v) {
+				return v.getTag();
+			})),
+			kind: kind
+		});
 	}
 };
 
@@ -193,8 +179,7 @@ Observer.prototype.newexpr = function(pos, callee, args) {
 Observer.prototype.done = function() {
 	var decls = [], globals = [];
 	
-	// recursively compute models for all objects reachable from the global one
-	var global_model = getModel(this.global);
+	var global_model = this.global.getTag();
 	
 	// hashcons non-circular models
 	global_model.checkCircularity();

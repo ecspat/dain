@@ -15,11 +15,18 @@
      ObjModel = require('./ObjModel').ObjModel,
      isIdentifier = require('./util').isIdentifier;
 
-function ArrayModel(property_models) {
+function ArrayModel() {
 	Model.call(this);
 	this.property_models = {};
 }
 ArrayModel.prototype = Object.create(ObjModel.prototype);
+
+ArrayModel.cache = {};
+ArrayModel.make = function(pos) {
+	if(!pos || pos.start_offset === -1)
+		return new ArrayModel();
+	return ArrayModel.cache[pos.start_offset] || (ArrayModel.cache[pos.start_offset] = new ArrayModel());
+};
 
 ArrayModel.prototype.normalisePropName = function(prop) {
 	// merge non-identifier, non-index properties
