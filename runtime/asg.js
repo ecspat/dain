@@ -35,8 +35,7 @@ var add = require('./util').add,
 	mkThis = ast.mkThis,
 	mkOr = ast.mkOr,
 	mkReturn = ast.mkReturn,
-	mkProperty = ast.mkProperty,
-	getModel = require('./models').getModel;
+	mkProperty = ast.mkProperty;
 
 
 /**

@@ -14,11 +14,10 @@
  var asg = require('./asg'),
      ast = require('./ast'),
      escodegen = require('escodegen'),
-     models = require('./models'),
      util = require('./util'),
      add = util.add,
      isObject = util.isObject,
-     getOrCreateHiddenProp = util.getOrCreateHiddenProp,
+     getOrCreateHiddenProp = util.getOrCreateHiddenProp.type === 'client object'
      setHiddenProp = util.setHiddenProp,
      mkAssignStmt = ast.mkAssignStmt,
      mkIdentifier = ast.mkIdentifier,
