@@ -3,8 +3,7 @@ DAIN: Dynamic API Inferencer
 
 This is a tool for dynamically inferring API models for frameworks.
 
-Use `instrument.js` to create an instrumented version of the framework, then exercise the instrumented version using some client (for instance, the framework's test suite).
-At any point, you can invoke `__observer.done()` to obtain a pretty-printed model of every object and function created by the framework that is reachable from global scope.
+Use `instrument.js` to create an instrumented version of the framework, then exercise the instrumented version using some client (for instance, the framework's test suite). At any point, you can invoke `__runtime.observer.done()` to obtain a pretty-printed model of every object and function created by the framework that is reachable from global scope.
 
 Installation
 ------------
@@ -19,14 +18,11 @@ Usage
 
 Instruments file.js to dynamically build models.
 
-If the `-l` flag is not specified, the instrumented program is dumped to stdout. You would want to redirect stdout to a file, and then load that file into an HTML page that exercises its functionality.
-After you have exercised it enough, invoke the global function `__observer.done()` (e.g., from the JavaScript console), which will yield a pretty-printed summary of the inferred API in the form of a JavaScript program.
+If the `-l` flag is not specified, the instrumented program is dumped to stdout. You would want to redirect stdout to a file, and then load that file into an HTML page that exercises its functionality. After you have exercised it enough, invoke the global function `__runtime.observer.done()` (e.g., from the JavaScript console), which will yield a pretty-printed summary of the inferred API in the form of a JavaScript program.
 
-If the `-l` flag is specified, the instrumented program is immediately loaded into Zombie.js with a trivial HTML page that does nothing except loading the JavaScript file, and then immediately invoking `__observer.done()`.
-The pretty-printed model is then dumped to stdout.
+If the `-l` flag is specified, the instrumented program is immediately loaded into Zombie.js with a trivial HTML page that does nothing except loading the JavaScript file, and then immediately invoking `__runtime.observer.done()`. The pretty-printed model is then dumped to stdout.
 
-If the `-l` flag is specified and file `test.js` is given, the instrumented program is loaded together with `test.js`, which may then proceed to exercise the instrumented code.
-After one second, `__observer.done()` is invoked and the model is dumped as per usual.
+If the `-l` flag is specified and file `test.js` is given, the instrumented program is loaded together with `test.js`, which may then proceed to exercise the instrumented code. After one second, `__runtime.observer.done()` is invoked and the model is dumped as per usual.
 
 
 Details
@@ -34,7 +30,7 @@ Details
 
 Our language of models contains
 
-  1. primitive types (`BOOLEAN`, `NUMBER`, `STRING`, `NULL`, `UNDEFINED`),
+  1. primitive types (`BOOLEAN`, `NUMBER`, `STRING`, `NULL`, `UNDEFINED`, `REGEXP'),
   2. function models representing all function objects arising from one single textual definition,
   3. object and array literal models representing all object/array literals arising from one single textual definition, and
   4. function instance models representing all objects created by using 'new' with a given function model.
