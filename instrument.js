@@ -26,7 +26,7 @@ var esprima = require('esprima'),
     ArgumentParser = require('argparse').ArgumentParser;
     
 function instrument(file, load, test, cb) {
-	var b = browserify("./runtime/runtime.js");
+	var b = browserify(__dirname + "/runtime/runtime.js");
 	b.bundle({ debug: false }, function(err, runtime) {
 		if(err)
 			throw new Error(err);
