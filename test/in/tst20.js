@@ -1,0 +1,1 @@
+var core_substring = String.prototype.substring;

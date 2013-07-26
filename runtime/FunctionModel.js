@@ -17,8 +17,9 @@ var ObjModel = require('./ObjModel').ObjModel,
     UNDEFINED = require('./PrimitiveModel').UNDEFINED,
     add = require('./util').add;
  
-function FunctionModel() {
+function FunctionModel(pp_id) {
 	ObjModel.call(this);
+	this.pp_id = arguments.length ? pp_id : this.id;
 	this.instance_model = new InstanceModel(this);
 	this.default_proto_model = new ObjModel();
 	this.return_model = UNDEFINED;
@@ -31,7 +32,7 @@ FunctionModel.cache = {};
 FunctionModel.make = function(pos) {
 	if(!pos || pos.start_offset === -1)
 		return new FunctionModel();
-	return FunctionModel.cache[pos.start_offset] || (FunctionModel.cache[pos.start_offset] = new FunctionModel());
+	return FunctionModel.cache[pos.start_offset] || (FunctionModel.cache[pos.start_offset] = new FunctionModel(pos.start_offset));
 };
 
 FunctionModel.prototype.addReturnModel = function(model) {

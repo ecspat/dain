@@ -15,8 +15,9 @@
      ObjModel = require('./ObjModel').ObjModel,
      isIdentifier = require('./util').isIdentifier;
 
-function ArrayModel() {
+function ArrayModel(pp_id) {
 	Model.call(this);
+	this.pp_id = arguments.length ? pp_id : this.id;
 	this.property_models = {};
 }
 ArrayModel.prototype = Object.create(ObjModel.prototype);
@@ -25,7 +26,7 @@ ArrayModel.cache = {};
 ArrayModel.make = function(pos) {
 	if(!pos || pos.start_offset === -1)
 		return new ArrayModel();
-	return ArrayModel.cache[pos.start_offset] || (ArrayModel.cache[pos.start_offset] = new ArrayModel());
+	return ArrayModel.cache[pos.start_offset] || (ArrayModel.cache[pos.start_offset] = new ArrayModel(pos.start_offset));
 };
 
 ArrayModel.prototype.normalisePropName = function(prop) {

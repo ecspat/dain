@@ -29,7 +29,8 @@
      InstanceModel = require('./InstanceModel').InstanceModel,
      FunctionModel = require('./FunctionModel').FunctionModel,
      PrimitiveModel = require('./PrimitiveModel'),
-     ClientObjModel = require('./ClientObjModel').ClientObjModel;
+     ClientObjModel = require('./ClientObjModel').ClientObjModel,
+     builtins = require('./builtins');
      
 require('./circularity');
 require('./hashconsing');
@@ -42,7 +43,8 @@ function Observer() {
 
 Observer.prototype.tagGlobal = function(global) {
 	var tag = new GlobalModel(global);
-	Object.defineProperty(global, "__tag", { enumerable: false, writable: true, value: tag });
+	util.setHiddenProp(global, '__tag', tag);
+	builtins.tagBuiltins(global);
 	return tag;
 };
 

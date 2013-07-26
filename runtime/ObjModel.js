@@ -18,8 +18,9 @@
      add = util.add,
      isIdentifier = util.isIdentifier;
 
-function ObjModel() {
+function ObjModel(pp_id) {
 	Model.call(this);
+	this.pp_id = arguments.length ? pp_id : this.id;
 	this.property_models = {};
 }
 ObjModel.prototype = Object.create(Model.prototype);
@@ -28,7 +29,7 @@ ObjModel.cache = {};
 ObjModel.make = function(pos) {
 	if(!pos || pos.start_offset === -1)
 		return new ObjModel();
-	return ObjModel.cache[pos.start_offset] || (ObjModel.cache[pos.start_offset] = new ObjModel());
+	return ObjModel.cache[pos.start_offset] || (ObjModel.cache[pos.start_offset] = new ObjModel(pos.start_offset));
 };
 
 ObjModel.prototype.addPropertyModel = function(prop, model) {

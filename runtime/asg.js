@@ -18,6 +18,7 @@ var add = require('./util').add,
 	ObjModel = require('./ObjModel').ObjModel,
 	ArrayModel = require('./ArrayModel').ArrayModel,
 	ClientObjModel = require('./ClientObjModel').ClientObjModel,
+	BuiltinObjectModel = require('./BuiltinObjectModel').BuiltinObjectModel,
 	Union = require('./Union').Union,
 	UNDEFINED = PrimitiveModel.UNDEFINED,
 	NULL = PrimitiveModel.NULL,
@@ -63,18 +64,18 @@ FunctionModel.prototype.generate_asg = function(decls) {
 		rest: null,
 		generator: false,
 		expression: false,
-		temp_name: "function_" + this.id
+		temp_name: "function_" + this.pp_id
 	};
 	
 	// handle used parameters
 	if(this.used_params[0]) {
-		body.push(mkAssignStmt(mkIdentifier('function_' + this.id + '_0'),
+		body.push(mkAssignStmt(mkIdentifier('function_' + this.pp_id + '_0'),
 							   mkThis()));
 	}
 	for(var i=1,n=this.used_params.length;i<n;++i) {
 		params.push(mkIdentifier('x' + i));
 		if(i in this.used_params) {
-			body.push(mkAssignStmt(mkIdentifier('function_' + this.id + '_' + i),
+			body.push(mkAssignStmt(mkIdentifier('function_' + this.pp_id + '_' + i),
 								   mkIdentifier('x' + i)));
 		}
 	}
@@ -122,7 +123,7 @@ InstanceModel.prototype.generate_asg = function(decls) {
 		type: 'NewExpression',
 		callee: fn_asg,
 		'arguments': [],
-		temp_name: 'new_' + this.fn_model.id
+		temp_name: 'new_' + this.fn_model.pp_id
 	};
 };
 
@@ -133,7 +134,7 @@ ObjModel.prototype.generate_asg = function(decls) {
 	this.asg = {
 		type: 'ObjectExpression',
 		properties: props,
-		temp_name: "obj" + this.id
+		temp_name: "obj_" + this.pp_id
 	};
 
 	for (var p in this.property_models) {
@@ -154,7 +155,7 @@ ArrayModel.prototype.generate_asg = function(decls) {
 	this.asg = {
 		type: 'ArrayExpression',
 		elements: elements,
-		temp_name: 'array' + this.id
+		temp_name: 'array_' + this.pp_id
 	};
 
 	for(var p in this.property_models) {
@@ -171,6 +172,14 @@ ArrayModel.prototype.generate_asg = function(decls) {
 	}
 	
 	return this.asg;
+};
+
+BuiltinObjectModel.prototype.generate_asg = function() {
+	var components = this.full_name.split('.'), asg;
+	asg = mkIdentifier(components[0]);
+	for(var i=1;i<components.length;++i)
+		asg = mkMemberExpression(asg, components[i]);
+	return asg;
 };
 
 PrimitiveModel.PrimitiveModel.prototype.generate_asg = function() {
@@ -249,7 +258,7 @@ ClientObjModel.prototype.generate_asg = function(decls) {
 	if(this.asg)
 		return mkIdentifier(this.asg);
 		
-	this.asg = "function_" + this.fn_model.id + "_" + this.idx;
+	this.asg = "function_" + this.fn_model.pp_id + "_" + this.idx;
 	if(!decls[0] || decls[0].type !== 'VariableDeclaration') {
 		decls.unshift({
 			type: 'VariableDeclaration',

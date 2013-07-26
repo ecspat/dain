@@ -1,9 +1,9 @@
 var o;
 (function () {
-    var function_7 = function () {
+    var function_14 = function () {
     };
     o = {
-        f: function_7,
-        g: function_7
+        f: function_14,
+        g: function_14
     };
 }());
