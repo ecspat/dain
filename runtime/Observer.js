@@ -90,28 +90,40 @@ Observer.prototype.tagNativeArgument = function(callee, arg, idx) {
 	if(arg && arg.hasOwnProperty('__tag'))
 		return arg.__tag;
 		
-	var tag = ClientObjModel.make(callee.__tag, idx);
-	if(Object(arg) === arg) {
-		Object.defineProperty(arg, "__tag", { enumerable: false, writable: true, value: tag });
+	if(callee.hasOwnProperty('__tag')) {
+		var tag = ClientObjModel.make(callee.__tag, idx);
+		if(Object(arg) === arg) {
+			Object.defineProperty(arg, "__tag", { enumerable: false, writable: true, value: tag });
+		}
+		return tag;
+	} else {
+		return new ObjModel();
 	}
-	return tag;
 };
 
-Observer.prototype.tagNativeResult = Observer.prototype.tagNewNativeInstance = function(res) {
+var tagNative =
+Observer.prototype.tagNativeResult =
+Observer.prototype.tagNewNativeInstance =
+Observer.prototype.tagCallee = function(res) {
 	// check whether it is an object
 	if(Object(res) === res) {
 		// maybe the object is already tagged?
 		if(res.hasOwnProperty('__tag'))
 			return res.__tag;
 			
+		// no; check whether it is a function
+		if(typeof res === 'function') {
+			return util.setHiddenProp(res, '__tag', new FunctionModel());
+		}
+			
 		// or maybe it is an instance of a function we know?
 		var proto = Object.getPrototypeOf(res);
 		if(proto.hasOwnProperty('__tag') && proto.__tag.default_proto_of) {
-			return new InstanceModel(proto.__tag.default_proto_of);
+			return util.setHiddenProp(res, '__tag', new InstanceModel(proto.__tag.default_proto_of));
 		}
 		
 		// nope, it's just some object
-		return new ObjModel();
+		return util.setHiddenProp(res, '__tag', new ObjModel());
 	} else {
 		return this.tagLiteral(null, res);
 	}
@@ -119,7 +131,7 @@ Observer.prototype.tagNativeResult = Observer.prototype.tagNewNativeInstance = f
 
 Observer.prototype.tagNativeProperty = function(obj, prop, val) {
 	if(Object(val) === val) {
-		return val.__tag || new ObjModel();
+		return val.hasOwnProperty('__tag') && val.__tag || new ObjModel();
 	} else {
 		return this.tagLiteral(null, val);
 	}
