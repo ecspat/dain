@@ -97,9 +97,21 @@ Observer.prototype.tagNativeArgument = function(callee, arg, idx) {
 	return tag;
 };
 
-Observer.prototype.tagNativeResult = function(res, callee, recv, args) {
+Observer.prototype.tagNativeResult = Observer.prototype.tagNewNativeInstance = function(res) {
+	// check whether it is an object
 	if(Object(res) === res) {
-		return res.__tag || new ObjModel();
+		// maybe the object is already tagged?
+		if(res.hasOwnProperty('__tag'))
+			return res.__tag;
+			
+		// or maybe it is an instance of a function we know?
+		var proto = Object.getPrototypeOf(res);
+		if(proto.hasOwnProperty('__tag') && proto.__tag.default_proto_of) {
+			return new InstanceModel(proto.__tag.default_proto_of);
+		}
+		
+		// nope, it's just some object
+		return new ObjModel();
 	} else {
 		return this.tagLiteral(null, res);
 	}
@@ -115,10 +127,6 @@ Observer.prototype.tagNativeProperty = function(obj, prop, val) {
 
 Observer.prototype.tagNewInstance = function(res, callee, args) {
 	return callee.getTag().instance_model;
-};
-
-Observer.prototype.tagNewNativeInstance = function() {
-	return new ObjModel();
 };
 
 Observer.prototype.tagDefaultPrototype = function(fn) {
