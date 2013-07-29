@@ -41,6 +41,18 @@ ObjModel.prototype.addPropertyModel = function(prop, model) {
 	}
 };
 
+ObjModel.prototype.defineGetter = function(prop, model) {
+	// TODO: what if there already is a getter?
+	this.property_models['get ' + prop] = model;
+	model.getter = true;
+};
+
+ObjModel.prototype.defineSetter = function(prop, model) {
+	// TODO: what if there already is a setter?
+	this.property_models['set ' + prop] = model;
+	model.setter = true;
+};
+
 ObjModel.prototype.normalisePropName = function(prop) {
 	// merge non-identifier properties
 	return isIdentifier(prop) ? prop : '*';

@@ -88,6 +88,10 @@ FunctionModel.prototype.hashcons = function() {
 		return this.hashconsed;
 	}
 	this.hashconsed = this;
+	
+	if(this.getter || this.setter) {
+		return this.hashconsed;
+	}
 		
 	for(var p in this.property_models)
 		this.property_models[p] = this.property_models[p].hashcons();

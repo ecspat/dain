@@ -67,16 +67,21 @@ FunctionModel.prototype.generate_asg = function(decls) {
 		temp_name: "function_" + this.pp_id
 	};
 	
-	// handle used parameters
-	if(this.used_params[0]) {
-		body.push(mkAssignStmt(mkIdentifier('function_' + this.pp_id + '_0'),
-							   mkThis()));
-	}
-	for(var i=1,n=this.used_params.length;i<n;++i) {
-		params.push(mkIdentifier('x' + i));
-		if(i in this.used_params) {
-			body.push(mkAssignStmt(mkIdentifier('function_' + this.pp_id + '_' + i),
-								   mkIdentifier('x' + i)));
+	// set up parameter list
+	if (this.setter) {
+		params.push(mkIdentifier('x1'));
+	} else if (!this.getter) {
+		// handle used parameters
+		if (this.used_params[0]) {
+			body.push(mkAssignStmt(mkIdentifier('function_' + this.pp_id + '_0'),
+			mkThis()));
+		}
+		for (var i = 1, n = this.used_params.length; i < n; ++i) {
+			params.push(mkIdentifier('x' + i));
+			if (i in this.used_params) {
+				body.push(mkAssignStmt(mkIdentifier('function_' + this.pp_id + '_' + i),
+				mkIdentifier('x' + i)));
+			}
 		}
 	}
 
@@ -140,6 +145,12 @@ ObjModel.prototype.generate_asg = function(decls) {
 	for (var p in this.property_models) {
 		if (p.substring(0, 2) === '$$') {
 			props.push(mkProperty(p.substring(2), this.property_models[p].generate_asg(decls)));
+		} else if(p.substring(0, 4) === 'get ') {
+			var getter_asg = this.property_models[p].generate_asg(decls);
+			props.push({ type: 'Property', key: mkIdentifier(p.substring(4)), value: getter_asg, kind: 'get' });
+		} else if(p.substring(0, 4) === 'set ') {
+			var setter_asg = this.property_models[p].generate_asg(decls);
+			props.push({ type: 'Property', key: mkIdentifier(p.substring(4)), value: setter_asg, kind: 'set' });
 		}
 	}
 

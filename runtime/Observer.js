@@ -78,6 +78,20 @@ var tagLiteral = Observer.prototype.tagLiteral = function(pos, lit) {
 	}
 };
 
+Observer.prototype.tagGetter = Observer.prototype.tagSetter = function(pos, acc) {
+	return tagLiteral(null, acc);
+};
+
+Observer.prototype.defineGetter = function(obj, prop, getter) {
+	if(obj instanceof ObjModel)
+		obj.defineGetter(prop, getter);
+};
+
+Observer.prototype.defineSetter = function(obj, prop, setter) {
+	if(obj instanceof ObjModel)
+		obj.defineSetter(prop, setter);
+};
+
 Observer.prototype.tagForInVar = function() {
 	return PrimitiveModel.STRING;
 };
