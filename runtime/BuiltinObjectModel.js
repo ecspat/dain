@@ -11,13 +11,19 @@
  
  /*global require exports */
  
- var Model = require('./Model').Model;
+ var ObjModel = require('./ObjModel').ObjModel;
 
 /** A model of some well-known standard library or DOM object. */
 function BuiltinObjectModel(full_name) {
-	Model.call(this);
+	ObjModel.call(this);
 	this.full_name = full_name;
 }
-BuiltinObjectModel.prototype = Object.create(Model.prototype);
+BuiltinObjectModel.prototype = Object.create(ObjModel.prototype);
+
+BuiltinObjectModel.cache = {};
+BuiltinObjectModel.create = function(full_name) {
+	var id = '$$' + full_name;
+	return BuiltinObjectModel.cache[id] || (BuiltinObjectModel.cache[id] = new BuiltinObjectModel(full_name));
+};
 
 exports.BuiltinObjectModel = BuiltinObjectModel;

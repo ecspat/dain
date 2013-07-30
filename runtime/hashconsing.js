@@ -20,6 +20,7 @@ var Model = require('./Model').Model,
     GlobalModel = require('./GlobalModel').GlobalModel,
     FunctionModel = require('./FunctionModel').FunctionModel,
     InstanceModel = require('./InstanceModel').InstanceModel,
+    BuiltinObjectModel = require('./BuiltinObjectModel').BuiltinObjectModel,
     Union = require('./Union').Union,
     util = require('./util'),
     add = util.add,
@@ -27,6 +28,10 @@ var Model = require('./Model').Model,
     
 // no hashconsing by default
 Model.prototype.hashcons = function() {
+	return this;
+};
+
+BuiltinObjectModel.prototype.hashcons = function() {
 	return this;
 };
 

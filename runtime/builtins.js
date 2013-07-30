@@ -690,7 +690,8 @@ exports.tagBuiltins = function(global) {
 			if(!obj) {
 				return;
 			}
-			var tag = new BuiltinObjectModel(name);
+			var tag = BuiltinObjectModel.create(name);
+			old_obj.__tag.addPropertyModel(components[i], tag);
 			if(components[i] === 'prototype') {
 				tag.default_proto_of = old_obj.__tag;
 			}

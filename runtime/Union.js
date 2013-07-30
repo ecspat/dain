@@ -31,11 +31,6 @@ function Union(members) {
 Union.prototype = Object.create(Model.prototype);
 
 Union.make = function(members) {
-	if(members.length === 0)
-		return UNDEFINED;
-	if(members.length === 1)
-		return members[0];
-		
 	// if any of the members are themselves unions, flatten them out first
 	var flattened_members = [];
 	members.forEach(function(member) {
@@ -47,6 +42,11 @@ Union.make = function(members) {
 			add(flattened_members, member);
 		}
 	});
+		
+	if(flattened_members.length === 0)
+		return UNDEFINED;
+	if(flattened_members.length === 1)
+		return members[0];
 		
 	return new Union(flattened_members);
 };

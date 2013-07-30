@@ -33,7 +33,7 @@ ObjModel.make = function(pos) {
 };
 
 ObjModel.prototype.addPropertyModel = function(prop, model) {
-	prop = '$$' + this.normalisePropName(prop.substring(2));
+	prop = '$$' + this.normalisePropName(prop);
 	if(prop in this.property_models) {
 		this.property_models[prop] = Union.make([this.property_models[prop], model]);
 	} else {

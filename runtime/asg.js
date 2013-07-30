@@ -66,6 +66,12 @@ FunctionModel.prototype.generate_asg = function(decls) {
 		expression: false,
 		temp_name: "function_" + this.pp_id
 	};
+	this.instance_asg = {
+		type: 'NewExpression',
+		callee: this.asg,
+		'arguments': [],
+		temp_name: 'new_' + this.pp_id
+	};
 	
 	// set up parameter list
 	if (this.setter) {
@@ -123,13 +129,8 @@ GlobalModel.prototype.generate_asg = function(decls) {
 };
 
 InstanceModel.prototype.generate_asg = function(decls) {
-	var fn_asg = this.fn_model.generate_asg(decls);
-	return {
-		type: 'NewExpression',
-		callee: fn_asg,
-		'arguments': [],
-		temp_name: 'new_' + this.fn_model.pp_id
-	};
+	this.fn_model.generate_asg(decls);
+	return this.fn_model.instance_asg;
 };
 
 ObjModel.prototype.generate_asg = function(decls) {
@@ -185,7 +186,33 @@ ArrayModel.prototype.generate_asg = function(decls) {
 	return this.asg;
 };
 
-BuiltinObjectModel.prototype.generate_asg = function() {
+BuiltinObjectModel.prototype.generate_asg = function(decls) {
+	if(this.decls_generated)
+		return this.generate_name_expr();
+		
+	this.decls_generated = true;
+	for (var p in this.property_models) {
+		if (p.substring(0, 2) === '$$') {
+			var lhs = mkMemberExpression(this.generate_name_expr(), p.substring(2));
+			var prop_model = this.property_models[p],
+			    prop_asg = prop_model.generate_asg(decls);
+			if(!(prop_model instanceof BuiltinObjectModel && prop_model.full_name === this.full_name + '.' + p.substring(2))) {
+				decls.push(mkAssignStmt(lhs, prop_asg));
+			}
+		}
+	}
+	
+	// TODO: only need instance_asg for builtin functions
+	this.instance_asg = {
+		type: 'NewExpression',
+		callee: this.generate_name_expr(),
+		'arguments': [],
+		temp_name: 'new_' + this.full_name.replace(/\./g, '_')
+	};
+	return this.generate_name_expr();
+};
+
+BuiltinObjectModel.prototype.generate_name_expr = function() {	
 	var components = this.full_name.split('.'), asg;
 	asg = mkIdentifier(components[0]);
 	for(var i=1;i<components.length;++i)
@@ -296,7 +323,7 @@ function unfold_asgs(decls) {
 
 	function unfold(nd, parent, child_idx, root) {
 		var i, n;
-
+		
 		// check whether this node has already been promoted to a declaration
 		if (nd.global_decl) {
 			recordDependency(root, nd.global_decl);

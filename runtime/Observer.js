@@ -30,6 +30,7 @@
      FunctionModel = require('./FunctionModel').FunctionModel,
      PrimitiveModel = require('./PrimitiveModel'),
      ClientObjModel = require('./ClientObjModel').ClientObjModel,
+     BuiltinObjectModel = require('./BuiltinObjectModel').BuiltinObjectModel,
      builtins = require('./builtins');
      
 require('./circularity');
@@ -173,7 +174,7 @@ Observer.prototype.tagPropRead = function(val, obj, prop, stored_tag) {
 
 Observer.prototype.tagPropWrite = function(obj, prop, val) {
 	if(obj.getTag() instanceof ObjModel) {
-		obj.getTag().addPropertyModel('$$' + prop.getValue(), val.getTag());
+		obj.getTag().addPropertyModel(prop.getValue(), val.getTag());
 	}
 	return val.getTag();
 };
@@ -224,9 +225,14 @@ Observer.prototype.done = function() {
 	
 	// create definitions for all global variables
 	for (var p in global_model.property_models) {
-		var prop = p.substring(2);
+		var prop = p.substring(2),
+		    model = global_model.property_models[p],
+		    model_asg = model.generate_asg(decls);
+		if(model instanceof BuiltinObjectModel && model.full_name === prop) {
+			continue;
+		}
 		globals.push(prop);
-		decls.push(mkAssignStmt(mkIdentifier(prop), global_model.property_models[p].generate_asg(decls)));
+		decls.push(mkAssignStmt(mkIdentifier(prop), model_asg));
 	}
 	
 	// create calls for all observed callback invocations
