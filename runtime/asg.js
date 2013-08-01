@@ -121,7 +121,7 @@ FunctionModel.prototype.generate_asg = function(decls) {
 
 GlobalModel.prototype.generate_asg = function(decls) {
 	if (!this.asg) {
-		var name = 'global_' + this.id;
+		var name = 'global';
 		this.asg = mkIdentifier(name);
 		decls.push(mkDecl(name, mkThis()));
 	}
