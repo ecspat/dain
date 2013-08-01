@@ -14,9 +14,13 @@
 var Model = require('./Model').Model,
     ClientObjModel = require('./ClientObjModel').ClientObjModel;
 
-/* traversal function for finding client objects that are used somewhere */
+/** Traversal method for finding client objects that are used somewhere. */
+
+/** Default implementation: just iterate over children with an additional
+  * visited flag to prevent infinite loops. */
 Model.prototype.findUsedClientObjects = function() {
 	if(!this.visited_fuco) {
+		// TODO: when is it safe to clear this flag?
 		this.visited_fuco = true;
 		this.getChildren().forEach(function(child) {
 			child.findUsedClientObjects();
@@ -24,6 +28,7 @@ Model.prototype.findUsedClientObjects = function() {
 	}
 };
 
+/** Record actual use of client object. */
 ClientObjModel.prototype.findUsedClientObjects = function() {
 	this.fn_model.used_params[this.idx] = true;
 };

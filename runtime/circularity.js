@@ -21,8 +21,8 @@ var Model = require('./Model').Model,
     forEach = util.forEach;
 
 /** Circularity checker for models; every model that can transitively be reached from
- * one of its children is marked by setting its 'circular' property to true. */
- 
+  * one of its children is marked by setting its 'circular' property to true. This information
+  * is used when hashconsing models (circular models are never hashconsed). */
 Model.prototype.checkCircularity = function() {
 	if(this.visited) {
 		this.circular = true;

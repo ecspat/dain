@@ -190,6 +190,9 @@ BuiltinObjectModel.prototype.generate_asg = function(decls) {
 	if(this.decls_generated)
 		return this.generate_name_expr();
 		
+	// If the builtin object model has properties, then someone monkey patched the standard library
+	// (I'm looking at you, MooTools!). In this case, we add some global property writes to our model
+	// to reflect these properties.
 	this.decls_generated = true;
 	for (var p in this.property_models) {
 		if (p.substring(0, 2) === '$$') {
@@ -202,7 +205,8 @@ BuiltinObjectModel.prototype.generate_asg = function(decls) {
 		}
 	}
 	
-	// TODO: only need instance_asg for builtin functions
+	// Some builtin objects are, in fact, functions, so they need an instance_asg.
+	// TODO: This suggests that we should have a separate BuiltinFunction type.
 	this.instance_asg = {
 		type: 'NewExpression',
 		callee: this.generate_name_expr(),
@@ -212,6 +216,7 @@ BuiltinObjectModel.prototype.generate_asg = function(decls) {
 	return this.generate_name_expr();
 };
 
+/** Generate an AST corresponding to the fully qualified name of this builtin object model. */
 BuiltinObjectModel.prototype.generate_name_expr = function() {	
 	var components = this.full_name.split('.'), asg;
 	asg = mkIdentifier(components[0]);
@@ -220,10 +225,12 @@ BuiltinObjectModel.prototype.generate_name_expr = function() {
 	return asg;
 };
 
+/** Primitive models have fixed ASGs. */
 PrimitiveModel.PrimitiveModel.prototype.generate_asg = function() {
 	return this.asg;
 };
 
+/** NUMBER is represented as Math.random() */
 NUMBER.asg = {
 	type: 'CallExpression',
 	callee: mkMemberExpression("Math", "random"),
@@ -231,6 +238,7 @@ NUMBER.asg = {
 	temp_name: '$NUMBER$'
 };
 
+/** BOOLEAN is represented as !NUMBER */
 BOOLEAN.asg = {
 	type: 'UnaryExpression',
 	operator: '!',
@@ -238,6 +246,7 @@ BOOLEAN.asg = {
 	temp_name: '$BOOLEAN$'
 };
 
+/** STRING is represented as String(NUMBER) */
 STRING.asg = {
 	type: 'CallExpression',
 	callee: mkIdentifier('String'),
@@ -245,6 +254,7 @@ STRING.asg = {
 	temp_name: '$STRING$'
 };
 
+/** REGEXP is represented as new RegExp(STRING) */
 REGEXP.asg = {
 	type: 'NewExpression',
 	callee: mkIdentifier('RegExp'),
@@ -252,6 +262,7 @@ REGEXP.asg = {
 	temp_name: '$REGEXP$'
 };
 
+/** UNDEFINED is just void(0) */
 UNDEFINED.generate_asg = function() {
 	return {
 		type: 'UnaryExpression',
@@ -264,6 +275,7 @@ UNDEFINED.generate_asg = function() {
 	};
 };
 
+/** NULL is (wait for it) null */
 NULL.generate_asg = function() {
 	return {
 		type: 'Literal',
@@ -272,10 +284,12 @@ NULL.generate_asg = function() {
 	};
 };
 
+/** Union models are encoded as disjunctions. */
 Union.prototype.generate_asg = function(decls) {
 	if(this.asg)
 		return this.asg;
 		
+	// first weed out easy special cases
 	if(this.members.length === 0) {
 		return this.asg = UNDEFINED.generate_asg(decls);
 	} else if(this.members.length === 1) {
@@ -292,10 +306,13 @@ Union.prototype.generate_asg = function(decls) {
     return this.asg;
 };
 
+/** A client object model corresponds to a global variable into which the function model
+  * stores its respective argument. */
 ClientObjModel.prototype.generate_asg = function(decls) {
 	if(this.asg)
 		return mkIdentifier(this.asg);
 		
+	// create global declaration for this variable
 	this.asg = "function_" + this.fn_model.pp_id + "_" + this.idx;
 	if(!decls[0] || decls[0].type !== 'VariableDeclaration') {
 		decls.unshift({
@@ -314,8 +331,8 @@ ClientObjModel.prototype.generate_asg = function(decls) {
 };
 
 /** Function for unfolding a list of ASGs into a list of ASTs, with multiply
- * occurring subtrees hoisted into global declarations.
- */
+  * occurring subtrees hoisted into global declarations.
+  */
 function unfold_asgs(decls) {
 	function recordDependency(root1, root2) {
 		add(root1.deps || (root1.deps = []), root2);
@@ -328,12 +345,12 @@ function unfold_asgs(decls) {
 		if (nd.global_decl) {
 			recordDependency(root, nd.global_decl);
 			parent[child_idx] = mkIdentifier(nd.global_decl.declarations[0].id.name);
-			// otherwise check whether it needs to be promoted
+		// otherwise check whether it needs to be promoted
 		} else if (nd.parent) {
 			decls.push(nd.global_decl = mkDecl(nd.temp_name, nd));
 			unfold(nd, nd.parent, nd.child_idx, nd.root);
 			unfold(nd, parent, child_idx, root);
-			// OK, first time we visit this node
+		// OK, first time we visit this node
 		} else {
 			// record parent and child index in case we encounter this node again
 			nd.parent = parent;
