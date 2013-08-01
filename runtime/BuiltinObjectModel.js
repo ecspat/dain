@@ -16,10 +16,13 @@
 /** A model of some well-known standard library or DOM object. */
 function BuiltinObjectModel(full_name) {
 	ObjModel.call(this);
+	
+	/** The fully qualified name of the well-known object. */
 	this.full_name = full_name;
 }
 BuiltinObjectModel.prototype = Object.create(ObjModel.prototype);
 
+/** Cache builtin objects by their name. */
 BuiltinObjectModel.cache = {};
 BuiltinObjectModel.create = function(full_name) {
 	var id = '$$' + full_name;

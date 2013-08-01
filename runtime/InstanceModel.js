@@ -13,8 +13,11 @@
 
 var ObjModel = require('./ObjModel').ObjModel;
 
+/** An instance model represents all instances of a given function (model). */
 function InstanceModel(fn_model) {
 	ObjModel.call(this);
+	
+	/** Keep a reference to the function model. */
 	this.fn_model = fn_model;
 }
 InstanceModel.prototype = Object.create(ObjModel.prototype);

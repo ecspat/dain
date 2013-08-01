@@ -16,10 +16,15 @@ var Model = require('./Model').Model,
     add = util.add,
     UNDEFINED = require('./PrimitiveModel').UNDEFINED;
 
+/** Union models are used to handle cases where values with different models were
+  * seen in the same property (or return value). */
 function Union(members) {
 	Model.call(this);
+	
+	/** The set of member models. */
 	this.members = [];
 	
+	/** Set up this.members, making sure to only add every member once. */
 	var ids = [], self = this;
 	members.forEach(function(member) {
 		if(ids.indexOf(member.id) === -1) {
@@ -30,8 +35,9 @@ function Union(members) {
 }
 Union.prototype = Object.create(Model.prototype);
 
+/** Factory method for creating unions. If any of the provided members are themselves
+  * unions, they are flattened out first. */
 Union.make = function(members) {
-	// if any of the members are themselves unions, flatten them out first
 	var flattened_members = [];
 	members.forEach(function(member) {
 		if(member instanceof Union) {
@@ -43,6 +49,7 @@ Union.make = function(members) {
 		}
 	});
 		
+	// handle special cases of zero-member and one-member unions
 	if(flattened_members.length === 0)
 		return UNDEFINED;
 	if(flattened_members.length === 1)
@@ -51,6 +58,7 @@ Union.make = function(members) {
 	return new Union(flattened_members);
 };
 
+/** Its members are a union model's only children. */
 Union.prototype.getChildren = function() {
 	return this.members;
 };

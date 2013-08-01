@@ -15,6 +15,9 @@
      ObjModel = require('./ObjModel').ObjModel,
      isIdentifier = require('./util').isIdentifier;
 
+/** Array models are special object models that keep track of both identifier properties
+  * and numeric properties. (An object model would merge the latter with all other non-identifier
+  * properties.) */
 function ArrayModel(pp_id) {
 	Model.call(this);
 	this.pp_id = arguments.length ? pp_id : this.id;
@@ -22,6 +25,7 @@ function ArrayModel(pp_id) {
 }
 ArrayModel.prototype = Object.create(ObjModel.prototype);
 
+/** Caching works as for object models. */
 ArrayModel.cache = {};
 ArrayModel.make = function(pos) {
 	if(!pos || pos.start_offset === -1)
@@ -29,8 +33,8 @@ ArrayModel.make = function(pos) {
 	return ArrayModel.cache[pos.start_offset] || (ArrayModel.cache[pos.start_offset] = new ArrayModel(pos.start_offset));
 };
 
+/** Less aggressive property name merging: keep numeric properties. */
 ArrayModel.prototype.normalisePropName = function(prop) {
-	// merge non-identifier, non-index properties
 	return isIdentifier(prop) || Number(prop) >= 0 ? prop : '*';
 };
 

@@ -13,11 +13,13 @@
  
  var Model = require('./Model').Model;
 
+/** Primitive models represent JavaScript's primitive values (and regexps). */
 function PrimitiveModel() {
 	Model.call(this);
 }
 PrimitiveModel.prototype = Object.create(Model.prototype);
 
+/** There is only a fixed set of primitive models, which are initialised here. */
 var UNDEFINED = exports.UNDEFINED = new PrimitiveModel(),
     NULL = exports.NULL = new PrimitiveModel(),
     NUMBER = exports.NUMBER = new PrimitiveModel(),

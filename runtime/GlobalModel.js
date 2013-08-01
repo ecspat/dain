@@ -14,22 +14,33 @@
  var ObjModel = require('./ObjModel').ObjModel,
      add = require('./util').add;
 
+/** A model representing the global object. */
 function GlobalModel(global) {
+	/** There should only be one global object model. */
 	if(GlobalModel.GLOBAL)
 		throw new Error("Cannot have more than one global model.");
 	ObjModel.call(this);
+	
+	/** Keep a reference to the global object model. */
 	this.global = global;
+	
+	/** This array is filled with information about callbacks to user-supplied functions. */
 	this.callbacks = [];
+	
+	/** Make the singleton instance available. */
 	GlobalModel.GLOBAL = this;
 }
 GlobalModel.prototype = Object.create(ObjModel.prototype);
 
+/** Add a number of callback entries. */
 GlobalModel.prototype.addCallbacks = function(callbacks) {
 	for(var i=0,n=callbacks.length;i<n;++i) {
 		this.callbacks.push(callbacks[i]);
 	}
 };
 
+/** The children of this model are its properties, and (for each callback entry) the callee
+  * model and the argument models. */
 GlobalModel.prototype.getChildren = function() {
 	var children = ObjModel.prototype.getChildren.call(this);
 	this.callbacks.forEach(function(callback) {

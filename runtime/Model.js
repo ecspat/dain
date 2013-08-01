@@ -11,11 +11,15 @@
  
  /*global require exports */
 
+/** The superclass of all models. */
 function Model() {
+	/** Every model has a unique ID. */
 	this.id = Model.next_model_id++;
 }
 Model.next_model_id = 0;
 
+/** Models know about their child models. We need this when traversing the
+  * model graph. */
 Model.prototype.getChildren = function() {
 	return [];
 };
