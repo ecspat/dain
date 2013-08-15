@@ -428,8 +428,9 @@ function unfold_asgs(decls) {
 		}
 	}
 
-	for (var i = 0, n = decls.length; i < n; ++i)
-	unfold(decls[i], decls, i, decls[i]);
+	for (var i = 0, n = decls.length; i < n; ++i) {
+		unfold(decls[i], decls, i, decls[i]);
+	}
 }
 
 // perform topsort of given declarations so that references come after declarations
