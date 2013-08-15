@@ -61,8 +61,12 @@ ObjModel.prototype.hashcons = function() {
 	}
 	this.hashconsed = this;
 	
-	for(var p in this.property_models)
-		this.property_models[p] = this.property_models[p].hashcons();
+	for(var p in this.property_models) {
+		// see ObjModel.prototype.getChildren for an explanation of this test
+		if(p.match(/^(\$\$|get |set )/)) {
+			this.property_models[p] = this.property_models[p].hashcons();
+		}
+	}
 	
 	if(this.circular) {
 		return this;
@@ -98,8 +102,12 @@ FunctionModel.prototype.hashcons = function() {
 		return this.hashconsed;
 	}
 		
-	for(var p in this.property_models)
-		this.property_models[p] = this.property_models[p].hashcons();
+	for(var p in this.property_models) {
+		// see ObjModel.prototype.getChildren for an explanation of this test
+		if(p.match(/^(\$\$|get |set )/)) {
+			this.property_models[p] = this.property_models[p].hashcons();
+		}
+	}
 	this.instance_model = this.instance_model.hashcons();
 	this.return_model = this.return_model.hashcons();
 	
@@ -144,8 +152,12 @@ GlobalModel.prototype.hashcons = function() {
 		return this;
 	this.hashconsed = true;
 		
-	for(var p in this.property_models)
-		this.property_models[p] = this.property_models[p].hashcons();
+	for(var p in this.property_models) {
+		// see ObjModel.prototype.getChildren for an explanation of this test
+		if(p.match(/^(\$\$|get |set )/)) {
+			this.property_models[p] = this.property_models[p].hashcons();
+		}
+	}
 
 	var callbacks = [];
 	this.callbacks.forEach(function(callback) {

@@ -83,8 +83,13 @@ ObjModel.prototype.normalisePropName = function(prop) {
 /** The child models of an object model are all the values of its property_models map. */
 ObjModel.prototype.getChildren = function() {
 	var children = [];
-	forEach(this.property_models, function(_, model) {
-		add(children, model);
+	forEach(this.property_models, function(pn, model) {
+		// if the unit test suite used to build the model is run using Jasmine, we may end up
+		// with Jasmine sticking its own (enumerable!) flag properties into property_models;
+		// make sure we don't treat those as children
+		if(pn.match(/^(\$\$|get |set )/)) {
+			add(children, model);
+		}
 	});
 	return children;
 };
