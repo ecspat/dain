@@ -97,10 +97,6 @@ Observer.prototype.tagForInVar = function() {
 	return PrimitiveModel.STRING;
 };
 
-Observer.prototype.tagNativeException = function() {
-	return new ObjModel();
-};
-
 Observer.prototype.tagNativeArgument = function(callee, arg, idx) {
 	if(arg && arg.hasOwnProperty('__tag'))
 		return arg.__tag;
@@ -119,6 +115,7 @@ Observer.prototype.tagNativeArgument = function(callee, arg, idx) {
 var tagNative =
 Observer.prototype.tagNativeResult =
 Observer.prototype.tagNewNativeInstance =
+Observer.prototype.tagNativeException =
 Observer.prototype.tagCallee = function(res) {
 	// check whether it is an object
 	if(Object(res) === res) {
