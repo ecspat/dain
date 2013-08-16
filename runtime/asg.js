@@ -120,12 +120,12 @@ FunctionModel.prototype.generate_asg = function(decls) {
 };
 
 GlobalModel.prototype.generate_asg = function(decls) {
+	var name = 'global';
 	if (!this.asg) {
-		var name = 'global';
 		this.asg = mkIdentifier(name);
 		decls.push(mkDecl(name, mkThis()));
 	}
-	return this.asg;
+	return mkIdentifier(name);
 };
 
 InstanceModel.prototype.generate_asg = function(decls) {
