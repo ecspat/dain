@@ -1,18 +1,11 @@
-var Q, flushing;
+var Q;
 (function () {
     var $NUMBER$ = Math.random();
-    var function_169 = function () {
-        return {
-            inspect: function () {
-                return { state: String($NUMBER$) };
-            }
-        };
+    var function_0 = function () {
+        return { foo: String($NUMBER$) };
     };
-    function_169.fbind = function () {
-        return function () {
-            return {};
-        };
+    function_0.foo = function () {
     };
-    Q = function_169;
-    flushing = !$NUMBER$;
+    function_0.bar = !$NUMBER$;
+    Q = function_0;
 }());

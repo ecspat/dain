@@ -1,1 +1,1 @@
-Q.fbind(function () {})().then(function () {});
+Q.foo();
