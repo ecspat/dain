@@ -131,7 +131,9 @@ Observer.prototype.tagCallee = function(res) {
 		// or maybe it is an instance of a function we know?
 		var proto = Object.getPrototypeOf(res);
 		if(proto.hasOwnProperty('__tag') && proto.__tag.default_proto_of) {
-			return util.setHiddenProp(res, '__tag', new InstanceModel(proto.__tag.default_proto_of));
+			var fn = proto.__tag.default_proto_of;
+			var instance_model = fn.instance_model || (fn.instance_model = new InstanceModel(fn));
+			return util.setHiddenProp(res, '__tag', instance_model);
 		}
 		
 		// nope, it's just some object

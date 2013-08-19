@@ -51,8 +51,13 @@ ObjModel.prototype.signature = function() {
 };
 
 // slightly different signature for instance model to prevent them from being hashconsed together with other objects
+// TODO: signature should say something about prototype
 InstanceModel.prototype.signature = function() {
-	return "Instance(" + ObjModel.prototype.signature.call(this) + ")";
+	if(this.fn_model instanceof BuiltinObjectModel) {
+		return "Instance(" + this.fn_model.full_name + ")";
+	} else {
+		return "Instance(" + ObjModel.prototype.signature.call(this) + ")";
+	}
 };
 
 ObjModel.prototype.hashcons = function() {
