@@ -34,6 +34,7 @@ function FunctionModel(pp_id) {
 	
 	/** The model of the default prototype object of this function. */
 	this.default_proto_model = new ObjModel();
+	this.default_proto_model.default_proto_of = this;
 	
 	/** The model of all observed return values of this function. */
 	this.return_model = UNDEFINED;

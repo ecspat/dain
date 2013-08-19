@@ -154,7 +154,9 @@ Observer.prototype.tagNewInstance = function(res, callee, args) {
 };
 
 Observer.prototype.tagDefaultPrototype = function(fn) {
-	return fn.getTag().default_proto_model;
+	var tag = fn.getTag().default_proto_model;
+	Object.defineProperty(fn.getValue().prototype, "__tag", { enumerable: false, writable: true, value: tag });
+	return tag;
 };
 
 Observer.prototype.tagUnOpResult = function(res) {
