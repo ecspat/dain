@@ -69,12 +69,20 @@ var tagLiteral = Observer.prototype.tagLiteral = function(pos, lit) {
 			return PrimitiveModel.NULL;
 		if(lit instanceof RegExp)
 			return PrimitiveModel.REGEXP;
-		tag = Array.isArray(lit) ? ArrayModel.make(pos) : ObjModel.make(pos);
-		Object.defineProperty(lit, "__tag", { enumerable: false, writable: true, value: tag });
+		if(lit.hasOwnProperty('__tag')) {
+			tag = lit.__tag;
+		} else {
+			tag = Array.isArray(lit) ? ArrayModel.make(pos) : ObjModel.make(pos);
+			Object.defineProperty(lit, "__tag", { enumerable: false, writable: true, value: tag });
+		}
 		return tag;
 	case 'function':
-		tag = FunctionModel.make(pos);
-		Object.defineProperty(lit, "__tag", { enumerable: false, writable: true, value: tag });
+		if(lit.hasOwnProperty('__tag')) {
+			tag = lit.__tag;
+		} else {
+			tag = FunctionModel.make(pos);
+			Object.defineProperty(lit, "__tag", { enumerable: false, writable: true, value: tag });
+		}
 		return tag;
 	}
 };
