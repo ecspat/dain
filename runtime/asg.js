@@ -396,7 +396,8 @@ function unfold_asgs(decls) {
 				break;
 			case 'ArrayExpression':
 				for (i = 0, n = nd.elements.length; i < n; ++i) {
-					unfold(nd.elements[i], nd.elements, i, root);
+					if(nd.elements[i])
+						unfold(nd.elements[i], nd.elements, i, root);
 				}
 				break;
 			case 'Property':
