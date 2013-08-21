@@ -175,6 +175,8 @@ ArrayModel.prototype.generate_asg = function(decls) {
 			var pn = p.substring(2);
 			if(Number(pn) >= 0) {
 				elements[Number(pn)] = this.property_models[p].generate_asg(decls);
+			} else if(pn === 'length' && this.property_models[p] === NUMBER) {
+				// this property is implicit; skip it
 			} else {
 				// found a non-index property, so just treat the whole thing as an object
 				delete this.asg;
