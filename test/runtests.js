@@ -42,5 +42,5 @@ fs.readdirSync(IN_DIR).forEach(function(file) {
 
 var reporter = require('nodeunit').reporters['default'];
 reporter.run({
-	"test-normalise": module.exports
+	"unit tests": module.exports
 });
