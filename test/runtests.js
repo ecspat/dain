@@ -9,7 +9,7 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global require exports module __dirname*/
+/*global require exports module __dirname process*/
 
 var fs = require('fs'),
 	path = require('path'),
@@ -41,6 +41,17 @@ fs.readdirSync(IN_DIR).forEach(function(file) {
 });
 
 var reporter = require('nodeunit').reporters['default'];
-reporter.run({
-	"unit tests": module.exports
-});
+
+/* If any arguments are passed, interpret them as names of tests to run. Otherwise, run all tests. */
+if(process.argv.length > 2) {
+	var tests = {};
+	var fixture = { "unit tests": tests };
+	for(var i=2,n=process.argv.length;i<n;++i) {
+		var tmp = process.argv[i].split("/"),
+			test = tmp[tmp.length-1];
+		tests[test] = exports[test];
+	}
+	reporter.run(fixture);
+} else {
+	reporter.run({ "unit tests": exports });
+}
