@@ -191,11 +191,20 @@ ArrayModel.prototype.generate_asg = function(decls) {
 BuiltinObjectModel.prototype.generate_asg = function(decls) {
 	if(this.decls_generated)
 		return this.generate_name_expr();
+	this.decls_generated = true;
 		
+	// Some builtin objects are, in fact, functions, so they need an instance_asg.
+	// TODO: This suggests that we should have a separate BuiltinFunction type.
+	this.instance_asg = {
+		type: 'NewExpression',
+		callee: this.generate_name_expr(),
+		'arguments': [],
+		temp_name: 'new_' + this.full_name.replace(/\./g, '_')
+	};
+
 	// If the builtin object model has properties, then someone monkey patched the standard library
 	// (I'm looking at you, MooTools!). In this case, we add some global property writes to our model
 	// to reflect these properties.
-	this.decls_generated = true;
 	for (var p in this.property_models) {
 		if (p.substring(0, 2) === '$$') {
 			var lhs = mkMemberExpression(this.generate_name_expr(), p.substring(2));
@@ -207,14 +216,6 @@ BuiltinObjectModel.prototype.generate_asg = function(decls) {
 		}
 	}
 	
-	// Some builtin objects are, in fact, functions, so they need an instance_asg.
-	// TODO: This suggests that we should have a separate BuiltinFunction type.
-	this.instance_asg = {
-		type: 'NewExpression',
-		callee: this.generate_name_expr(),
-		'arguments': [],
-		temp_name: 'new_' + this.full_name.replace(/\./g, '_')
-	};
 	return this.generate_name_expr();
 };
 
