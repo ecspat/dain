@@ -24,7 +24,7 @@ If the `-l` flag is specified, the instrumented program is immediately loaded in
 
 If the `-l` flag is specified and file `test.js` is given, the instrumented program is loaded together with `test.js`, which may then proceed to exercise the instrumented code. After one second, `__getModel()` is invoked and the model is dumped as per usual.
 
-If both the `-l` and the `-t` flag are specified, `__getEvents()` is invoked instead of `__getModel()`, yielding a JSON representation of all observed property writes, function returns, and callbacks.
+If both the `-l` and the `-t` flag are specified, `__getEvents()` is invoked instead of `__getModel()`, yielding a JSON representation of all observed property writes, function returns, and callbacks. You can later use `build-model.js` to construct a model from one or more such JSON files.
 
 
 Details
