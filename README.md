@@ -14,15 +14,17 @@ Run `npm install` in this directory to pull in dependencies.
 Usage
 -----
 
-        node instrument.js [-l] file.js [test.js]
+        node instrument.js [-l] [-t] file.js [test.js]
 
 Instruments file.js to dynamically build models.
 
-If the `-l` flag is not specified, the instrumented program is dumped to stdout. You would want to redirect stdout to a file, and then load that file into an HTML page that exercises its functionality. After you have exercised it enough, invoke the global function `__runtime.observer.done()` (e.g., from the JavaScript console), which will yield a pretty-printed summary of the inferred API in the form of a JavaScript program.
+If the `-l` flag is not specified, the instrumented program is dumped to stdout. You would want to redirect stdout to a file, and then load that file into an HTML page that exercises its functionality. After you have exercised it enough, invoke the global function `__getModel()` (e.g., from the JavaScript console), which will yield a pretty-printed summary of the inferred API in the form of a JavaScript program.
 
-If the `-l` flag is specified, the instrumented program is immediately loaded into Zombie.js with a trivial HTML page that does nothing except loading the JavaScript file, and then immediately invoking `__runtime.observer.done()`. The pretty-printed model is then dumped to stdout.
+If the `-l` flag is specified, the instrumented program is immediately loaded into Zombie.js with a trivial HTML page that does nothing except loading the JavaScript file, and then immediately invoking `__getModel()`. The pretty-printed model is then dumped to stdout.
 
-If the `-l` flag is specified and file `test.js` is given, the instrumented program is loaded together with `test.js`, which may then proceed to exercise the instrumented code. After one second, `__runtime.observer.done()` is invoked and the model is dumped as per usual.
+If the `-l` flag is specified and file `test.js` is given, the instrumented program is loaded together with `test.js`, which may then proceed to exercise the instrumented code. After one second, `__getModel()` is invoked and the model is dumped as per usual.
+
+If both the `-l` and the `-t` flag are specified, `__getEvents()` is invoked instead of `__getModel()`, yielding a JSON representation of all observed property writes, function returns, and callbacks.
 
 
 Details

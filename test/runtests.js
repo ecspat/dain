@@ -9,7 +9,7 @@
  *     Max Schaefer - initial API and implementation
  *******************************************************************************/
 
-/*global require exports module __dirname process*/
+/*global require exports module __dirname process console*/
 
 var fs = require('fs'),
 	path = require('path'),
@@ -20,7 +20,7 @@ var fs = require('fs'),
 function runtest(test, input_file, client_file, output_file) {
 	test.expect(1);
 	var expected_output = escodegen.generate(esprima.parse(fs.readFileSync(output_file, 'utf-8')));
-	instrumenter.instrument(input_file, true, client_file, function(actual_output) {
+	instrumenter.instrument(input_file, true, false, client_file, function(actual_output) {
 		actual_output = escodegen.generate(esprima.parse(actual_output));
 		if(expected_output !== actual_output) {
 			console.log("expected: " + expected_output);

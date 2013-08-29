@@ -26,7 +26,11 @@ var esprima = require('esprima'),
     Browser = require('zombie'),
     ArgumentParser = require('argparse').ArgumentParser;
     
-function instrument(file, load, test, cb) {
+function instrument(file, load, only_trace, test, cb) {
+	if(only_trace && !load) {
+		console.warn("Option -t is meaningless without -l");
+	}
+	
 	var b = browserify(__dirname + "/lib/runtime.js");
 	b.bundle({ debug: false }, function(err, runtime) {
 		if(err)
@@ -53,7 +57,7 @@ function instrument(file, load, test, cb) {
 						console.error(browser.errors.join('\n'));
 						return;
 					}
-					cb(browser.window.__getModel());
+					cb(only_trace ? browser.window.__getEvents() : browser.window.__getModel());
 				//}, 1000);
 			});
 		} else {
@@ -74,6 +78,11 @@ if (require.main === module) {
 		nargs: 0,
 		help: 'Immediately load instrumented code in a trivial HTML page.'
 	});
+	
+	argParser.addArgument(['-t', '--trace'], {
+		nargs: 0,
+		help: 'Only record a trace of events.'
+	});
 
 	var r = argParser.parseKnownArgs();
 	if (r[1].length < 1 || r[1].length > 2 || r[1][0][0] === '-') {
@@ -81,5 +90,5 @@ if (require.main === module) {
 		process.exit(-1);
 	}
 	
-	instrument(r[1][0], r[0].load, r[1][1], console.log);
+	instrument(r[1][0], r[0].load, r[0].trace, r[1][1], console.log);
 }
