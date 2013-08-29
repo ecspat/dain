@@ -9,6 +9,7 @@
 		"eavesdropper": "https://github.com/ecspat/eavesdropper/tarball/master",
 		"escodegen": "*",
     	"esprima": "*",
+    	"estraverse": "*",
 		"nodeunit" : "*",
 		"temp" : "*",
 		"zombie" : "*"

@@ -131,6 +131,25 @@ function isEmptyObjectLiteral(obj) {
 		   obj.properties.length === 0;
 }
 
+/**
+ * Replace parent's child old_child with new_child. If any of
+ * parent's children are arrays, we search those recursively to find old_child.
+ */
+function replaceChild(parent, old_child, new_child) {
+	for(var ch in parent) {
+		if(parent[ch] === old_child) {
+			parent[ch] = new_child;
+			return true;
+		}
+		if(Array.isArray(parent[ch])) {
+			if(replaceChild(parent[ch], old_child, new_child)) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 exports.isEmptyObjectLiteral = isEmptyObjectLiteral;
 exports.mkAssignStmt = mkAssignStmt;
 exports.mkCallStmt = mkCallStmt;
@@ -141,3 +160,4 @@ exports.mkOr = mkOr;
 exports.mkProperty = mkProperty;
 exports.mkReturn = mkReturn;
 exports.mkThis = mkThis;
+exports.replaceChild = replaceChild;
