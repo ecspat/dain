@@ -22,6 +22,10 @@ function runtest(test, input_file, client_file, output_file) {
 	var expected_output = escodegen.generate(esprima.parse(fs.readFileSync(output_file, 'utf-8')));
 	instrumenter.instrument(input_file, true, client_file, function(actual_output) {
 		actual_output = escodegen.generate(esprima.parse(actual_output));
+		if(expected_output !== actual_output) {
+			console.log("expected: " + expected_output);
+			console.log("actual: " + actual_output);
+		}
 		test.equal(expected_output, actual_output);
 		test.done();
 	});
