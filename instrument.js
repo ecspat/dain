@@ -17,7 +17,8 @@
 
 var esprima = require('esprima'),
     escodegen = require('escodegen'),
-    eavesdropper = require('eavesdropper/eavesdropper.js'),
+    eavesdropper = require('eavesdropper/eavesdropper'),
+    ModelBuilder = require('./lib/build-model/ModelBuilder'),
     browserify = require('browserify'),
     fs = require('fs'),
     path = require('path'),
@@ -26,7 +27,7 @@ var esprima = require('esprima'),
     ArgumentParser = require('argparse').ArgumentParser;
     
 function instrument(file, load, test, cb) {
-	var b = browserify(__dirname + "/runtime/runtime.js");
+	var b = browserify(__dirname + "/lib/runtime.js");
 	b.bundle({ debug: false }, function(err, runtime) {
 		if(err)
 			throw new Error(err);
@@ -52,7 +53,7 @@ function instrument(file, load, test, cb) {
 						console.error(browser.errors.join('\n'));
 						return;
 					}
-					cb(browser.window.__runtime.observer.done());
+					cb(browser.window.__getModel());
 				//}, 1000);
 			});
 		} else {
