@@ -3,7 +3,7 @@ DAIN: Dynamic API Inferencer
 
 This is a tool for dynamically inferring API models for frameworks.
 
-Use `instrument.js` to create an instrumented version of the framework, then exercise the instrumented version using some client (for instance, the framework's test suite). At any point, you can invoke `__runtime.observer.done()` to obtain a pretty-printed model of every object and function created by the framework that is reachable from global scope.
+Use `instrument.js` to create an instrumented version of the framework, then exercise the instrumented version using some client (for instance, the framework's test suite). At any point, you can invoke `__getModel()` to obtain a pretty-printed model of every object and function created by the framework that is reachable from global scope.
 
 Installation
 ------------
