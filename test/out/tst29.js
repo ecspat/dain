@@ -1,6 +1,6 @@
 var A, a;
 (function () {
-	var function_0 = function () {
+	var function_0 = function function_0() {
 	};
 	function_0.prototype = { foo: Math.random() };
 	A = function_0;

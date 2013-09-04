@@ -1,3 +1,3 @@
 (function() {
-	Array.prototype.top = function() {};
+	Array.prototype.top = function function_22() {};
 })();

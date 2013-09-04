@@ -1,3 +1,3 @@
 (function () {
-    document.observe = function () {};
+    document.observe = function function_19() {};
 }());

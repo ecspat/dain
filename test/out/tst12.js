@@ -3,11 +3,11 @@ var register, invoke, cbs;
 (function() {
 	var function_15_1, function_57_1, function_57_2;
 	
-	register = function (x1) {
+	register = function function_15(x1) {
 	    function_15_1 = x1;
 	};
 	
-	invoke = function (x1, x2) {
+	invoke = function function_57(x1, x2) {
 		function_57_1 = x1;
 		function_57_2 = x2;
 	};

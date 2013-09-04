@@ -1,7 +1,7 @@
 var f;
 (function () {
     var function_0_1;
-    var function_0 = function (x1) {
+    var function_0 = function function_0(x1) {
         function_0_1 = x1;
     };
     function_0.x = function_0_1;
