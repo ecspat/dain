@@ -23,11 +23,24 @@ function pushAll(a, b) {
 	}
 }
 
-var no_cb = false, i = 2, n;
+var no_cb = false,
+    no_merging = false,
+    i = 2, n;
 
-if(process.argv[i] === '--no-cb') {
-	no_cb = true;
-	++i;
+outer:
+while((/^--/).test(process.argv[i])) {
+	switch(process.argv[i++]) {
+	case '--no-cb':
+		no_cb = true;
+		break;
+	case '--no-merging':
+		no_merging = true;
+		break;
+	case '--':
+		break outer;
+	default:
+		console.warn("Ignoring unknown option " + process.argv[i-1]);
+	}
 }
     
 var events = {
@@ -44,4 +57,4 @@ for(n=process.argv.length;i<n;++i) {
 		pushAll(events.callbacks, new_events.callbacks);
 	}
 }
-console.log(ModelBuilder.buildModel(events));
+console.log(ModelBuilder.buildModel(events, no_merging));
