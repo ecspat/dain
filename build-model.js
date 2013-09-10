@@ -25,6 +25,7 @@ function pushAll(a, b) {
 
 var no_cb = false,
     no_merging = false,
+    callback_merging = false,
     i = 2, n;
 
 outer:
@@ -35,6 +36,9 @@ while((/^--/).test(process.argv[i])) {
 		break;
 	case '--no-merging':
 		no_merging = true;
+		break;
+	case '--callback-merging':
+		callback_merging = true;
 		break;
 	case '--':
 		break outer;
@@ -57,4 +61,4 @@ for(n=process.argv.length;i<n;++i) {
 		pushAll(events.callbacks, new_events.callbacks);
 	}
 }
-console.log(ModelBuilder.buildModel(events, no_merging));
+console.log(ModelBuilder.buildModel(events, no_merging, callback_merging));

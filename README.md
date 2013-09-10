@@ -27,10 +27,10 @@ If the `-l` flag is specified and file `test.js` is given, the instrumented prog
 If both the `-l` and the `-t` flag are specified, `__getEvents()` is invoked instead of `__getModel()`, yielding a JSON representation of all observed property writes, function returns, and callbacks. You can later use `build-model.js` to construct a model from one or more such JSON files.
 
 
-		node build-model.js [--no-cb] [--no-merging] file1.json file2.json ...
+		node build-model.js [--no-cb] [--no-merging] [--callback-merging] file1.json file2.json ...
 		
 Builds a model from the given JSON-encoded event traces. If the `--no-cb` flag is specified, the generated model does not model invocation of callbacks. If the `--no-merging` flag is specified, the generated model does not merge structurally equal object/function models.
-This will lead to (much) larger models, but may improve precision for some clients.
+This will lead to (much) larger models, but may improve precision for some clients. Finally, the `--callback-merging` flag leads to multiple callbacks to the same function being merged into a single call.
 
 
 Details
